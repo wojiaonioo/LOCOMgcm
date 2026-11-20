@@ -1,0 +1,15 @@
+# Native regional adjoint packages.
+#-- Forward reference code/packages.conf: oceanic obcs kpp exf diagnostics.
+# Package selection for the adjoint:
+#--   oceanic (= gfd gmredi kpp, pkg/pkg_groups:20) written as gfd kpp: GMRedi
+#--     is compiled but never used in the reference (no useGMRedi in data.pkg)
+#--     and its Tapenade adjoint does not link;
+#--   diagnostics dropped (output only);
+#--   tapenade (forced by genmake2 -tap) and adjoint (= autodiff cost ctrl
+#--     grdchk, pkg/pkg_groups:22) added.  cal comes with exf (pkg_depend:37).
+gfd
+kpp
+obcs
+exf
+tapenade
+adjoint

@@ -1,0 +1,268 @@
+# Inclusion and exclusion reasons for MITgcm verification cases.
+schema: mitcases-adjudications/v1
+provenance:
+  source: MITgcm verification-case inventory
+  decision_date: "2026-08-21"
+adjudications:
+  - case: 1D_ocean_ice_column
+    disposition: skip
+    reason: "Out of scope: sea-ice thermodynamics is the case topic."
+    source: "MITgcm verification-case inventory"
+  - case: MLAdjust
+    disposition: skip
+    reason: "Capability gap: QG-Leith, Jamart wet points, and orthogonal viscosity controls are unavailable."
+    source: "MITgcm verification-case inventory"
+  - case: adjustment.128x64x1
+    disposition: skip
+    reason: "Out of scope: the configuration is an atmospheric ideal-gas case."
+    source: "MITgcm verification-case inventory"
+  - case: adjustment.cs-32x32x1
+    disposition: include
+    reason: "Included with the adjudicated six-face topology approximation."
+    source: "MITgcm verification-case inventory"
+  - case: advect_cs
+    disposition: skip
+    reason: "Capability gap: SOM advection scheme 80 is unavailable."
+    source: "MITgcm verification-case inventory"
+  - case: advect_xy
+    disposition: skip
+    reason: "Capability gap: SOM scheme 80 and variant scheme 4 with AB3 are unavailable."
+    source: "MITgcm verification-case inventory"
+  - case: advect_xz
+    disposition: skip
+    reason: "Capability gap: required PPM, SOM, seventh-order, and PQM schemes are unavailable."
+    source: "MITgcm verification-case inventory"
+  - case: aim.5l_Equatorial_Channel
+    disposition: skip
+    reason: "Out of scope: atmospheric AIM case."
+    source: "MITgcm verification-case inventory"
+  - case: aim.5l_LatLon
+    disposition: skip
+    reason: "Out of scope: atmospheric AIM case."
+    source: "MITgcm verification-case inventory"
+  - case: aim.5l_cs
+    disposition: skip
+    reason: "Out of scope: atmospheric AIM case with land and sea ice."
+    source: "MITgcm verification-case inventory"
+  - case: atm_gray
+    disposition: skip
+    reason: "Out of scope: gray-radiation atmospheric case."
+    source: "MITgcm verification-case inventory"
+  - case: bottom_ctrl_5x5
+    disposition: include
+    reason: "Included on the adjoint axis; no forward percent-MON reference exists."
+    source: "MITgcm verification-case inventory"
+  - case: cfc_example
+    disposition: skip
+    reason: "Out of scope: biogeochemical tracer case."
+    source: "MITgcm verification-case inventory"
+  - case: cheapAML_box
+    disposition: skip
+    reason: "Capability gap: pkg/cheapaml is unavailable."
+    source: "MITgcm verification-case inventory"
+  - case: cpl_aim+ocn
+    disposition: skip
+    reason: "Out of scope: coupled atmospheric component and multi-executable contract."
+    source: "MITgcm verification-case inventory"
+  - case: deep_anelastic
+    disposition: skip
+    reason: "Physics gap: deep-atmosphere metrics and anelastic reference state are unavailable."
+    source: "MITgcm verification-case inventory"
+  - case: dome
+    disposition: skip
+    reason: "Capability gaps: nonuniform meridional spacing and scheme 77 are unavailable."
+    source: "MITgcm verification-case inventory"
+  - case: exp2
+    disposition: skip
+    reason: "Configuration-specific instability: the adjudicated MIT configuration diverges."
+    source: "MITgcm verification-case inventory"
+  - case: exp4
+    disposition: skip
+    reason: "Capability gaps: scheme 4, three-dimensional RBCS, and passive tracers are unavailable."
+    source: "MITgcm verification-case inventory"
+  - case: fizhi-cs-32x32x40
+    disposition: skip
+    reason: "Out of scope: atmospheric Fizhi case."
+    source: "MITgcm verification-case inventory"
+  - case: fizhi-cs-aqualev20
+    disposition: skip
+    reason: "Out of scope: atmospheric Fizhi aquaplanet case."
+    source: "MITgcm verification-case inventory"
+  - case: fizhi-gridalt-hs
+    disposition: skip
+    reason: "Out of scope: atmospheric Fizhi Held-Suarez case."
+    source: "MITgcm verification-case inventory"
+  - case: flt_example
+    disposition: skip
+    reason: "Out of scope: upstream stub migrated into an exp4 variant."
+    source: "MITgcm verification-case inventory"
+  - case: front_relax
+    disposition: skip
+    reason: "Out of scope: GM-Redi is the case topic."
+    source: "MITgcm verification-case inventory"
+  - case: global_oce_biogeo_bling
+    disposition: skip
+    reason: "Out of scope: biogeochemical BLING case."
+    source: "MITgcm verification-case inventory"
+  - case: global_oce_latlon
+    disposition: include
+    reason: "Included with adjudicated GMRedi, PROFILES, diagnostics, and C-D switches disabled."
+    source: "MITgcm verification-case inventory"
+  - case: global_ocean.90x40x15
+    disposition: include
+    reason: "Included with adjudicated GMRedi, SBO, and C-D switches disabled."
+    source: "MITgcm verification-case inventory"
+  - case: global_ocean.cs32x15
+    disposition: include
+    reason: "Included with adjudicated GMRedi, SEAICE, and ThSIce packages disabled."
+    source: "MITgcm verification-case inventory"
+  - case: global_ocean_ebm
+    disposition: skip
+    reason: "Out of scope: upstream stub migrated into global_oce_latlon.ebm."
+    source: "MITgcm verification-case inventory"
+  - case: global_with_exf
+    disposition: skip
+    reason: "Out of scope: upstream stub migrated into global_oce_latlon."
+    source: "MITgcm verification-case inventory"
+  - case: halfpipe_streamice
+    disposition: skip
+    reason: "Out of scope: stream-ice case."
+    source: "MITgcm verification-case inventory"
+  - case: hs94.128x64x5
+    disposition: skip
+    reason: "Out of scope: Held-Suarez atmospheric case."
+    source: "MITgcm verification-case inventory"
+  - case: hs94.1x64x5
+    disposition: skip
+    reason: "Out of scope: Held-Suarez atmospheric case."
+    source: "MITgcm verification-case inventory"
+  - case: hs94.cs-32x32x5
+    disposition: skip
+    reason: "Out of scope: Held-Suarez atmospheric case."
+    source: "MITgcm verification-case inventory"
+  - case: ideal_2D_oce
+    disposition: skip
+    reason: "Out of scope: GM-Redi behavior is the case topic."
+    source: "MITgcm verification-case inventory"
+  - case: internal_wave
+    disposition: include
+    reason: "Nonuniform zonal spacing is supported through delXFile ingest
+      and nonuniform metrics. The case translates DEGRADED and runs with
+      G2 twin artifacts."
+    source: "MITgcm verification-case inventory"
+  - case: inverted_barometer
+    disposition: skip
+    reason: "Capability gap: atmospheric pressure loading is unavailable."
+    source: "MITgcm verification-case inventory"
+  - case: isomip
+    disposition: skip
+    reason: "Out of scope: ice-shelf and ice-front case."
+    source: "MITgcm verification-case inventory"
+  - case: lab_sea
+    disposition: skip
+    reason: "Out of scope: sea ice is the regional case topic."
+    source: "MITgcm verification-case inventory"
+  - case: matrix_example
+    disposition: skip
+    reason: "Capability gaps: pkg/matrix and passive tracer channels are unavailable."
+    source: "MITgcm verification-case inventory"
+  - case: natl_box
+    disposition: skip
+    reason: "Out of scope: upstream stub migrated into lab_sea variants."
+    source: "MITgcm verification-case inventory"
+  - case: obcs_ctrl
+    disposition: include
+    reason: "Included on the adjoint axis; no forward percent-MON reference exists."
+    source: "MITgcm verification-case inventory"
+  - case: offline_exf_seaice
+    disposition: skip
+    reason: "Out of scope: sea-ice dynamics and thermodynamics case."
+    source: "MITgcm verification-case inventory"
+  - case: seaice_itd
+    disposition: skip
+    reason: "Out of scope: sea-ice thickness-distribution case."
+    source: "MITgcm verification-case inventory"
+  - case: seaice_obcs
+    disposition: skip
+    reason: "Out of scope: sea ice is the case topic."
+    source: "MITgcm verification-case inventory"
+  - case: shelfice_2d_remesh
+    disposition: skip
+    reason: "Out of scope: ice-shelf remeshing case."
+    source: "MITgcm verification-case inventory"
+  - case: short_surf_wave
+    disposition: include
+    reason: "Included nonhydrostatic surface-wave case with pickup initialization."
+    source: "MITgcm verification-case inventory"
+  - case: so_box_biogeo
+    disposition: skip
+    reason: "Out of scope: biogeochemical DIC case."
+    source: "MITgcm verification-case inventory"
+  - case: solid-body.cs-32x32x1
+    disposition: include
+    reason: "Included with the adjudicated six-face topology approximation."
+    source: "MITgcm verification-case inventory"
+  - case: tutorial_advection_in_gyre
+    disposition: skip
+    reason: "Capability gap: passive tracer channels are unavailable."
+    source: "MITgcm verification-case inventory"
+  - case: tutorial_baroclinic_gyre
+    disposition: include
+    reason: "Included: all main-case physics and grid requirements are supported."
+    source: "MITgcm verification-case inventory"
+  - case: tutorial_barotropic_gyre
+    disposition: include
+    reason: "Included: minimal supported barotropic verification case."
+    source: "MITgcm verification-case inventory"
+  - case: tutorial_cfc_offline
+    disposition: skip
+    reason: "Out of scope: offline biogeochemical tracer case."
+    source: "MITgcm verification-case inventory"
+  - case: tutorial_deep_convection
+    disposition: include
+    reason: "Included main nonhydrostatic case; the smag3d variant remains skipped."
+    source: "MITgcm verification-case inventory"
+  - case: tutorial_dic_adjoffline
+    disposition: skip
+    reason: "Out of scope: offline biogeochemical adjoint case."
+    source: "MITgcm verification-case inventory"
+  - case: tutorial_global_oce_biogeo
+    disposition: skip
+    reason: "Out of scope: biogeochemical DIC case."
+    source: "MITgcm verification-case inventory"
+  - case: tutorial_global_oce_in_p
+    disposition: skip
+    reason: "Physics gap: pressure-coordinate vertical dynamics are unavailable."
+    source: "MITgcm verification-case inventory"
+  - case: tutorial_global_oce_latlon
+    disposition: include
+    reason: "Included with adjudicated GMRedi, PTRACERS, and C-D switches disabled."
+    source: "MITgcm verification-case inventory"
+  - case: tutorial_global_oce_optim
+    disposition: include
+    reason: "Included on the adjoint axis; no forward percent-MON reference exists."
+    source: "MITgcm verification-case inventory"
+  - case: tutorial_held_suarez_cs
+    disposition: skip
+    reason: "Out of scope: Held-Suarez atmospheric case."
+    source: "MITgcm verification-case inventory"
+  - case: tutorial_plume_on_slope
+    disposition: skip
+    reason: "Grid gap: nonuniform zonal spacing is unavailable."
+    source: "MITgcm verification-case inventory"
+  - case: tutorial_reentrant_channel
+    disposition: skip
+    reason: "Capability gaps: scheme 7 and three-dimensional RBCS are unavailable."
+    source: "MITgcm verification-case inventory"
+  - case: tutorial_rotating_tank
+    disposition: skip
+    reason: "Grid gap: cylindrical coordinates are unavailable."
+    source: "MITgcm verification-case inventory"
+  - case: tutorial_tracer_adjsens
+    disposition: include
+    reason: "Included on the adjoint axis; no forward percent-MON reference exists."
+    source: "MITgcm verification-case inventory"
+  - case: vermix
+    disposition: include
+    reason: "Included main KPP case; six unsupported mixing variants remain skipped."
+    source: "MITgcm verification-case inventory"

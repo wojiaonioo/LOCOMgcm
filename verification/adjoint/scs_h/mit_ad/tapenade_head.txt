@@ -1,0 +1,5 @@
+1268:AD_FILES =  \
+1630:TAPENADE_FLAGS = -ext $(TOOLSDIR)/TAP_support/flow_tap -head 'the_main_loop(fc)/(xx_genarr3d_dummy, xx_genarr2d_dummy, xx_gentim2d_dummy)'
+1637:AD_FILES_ADJ=$(AD_FILES:.f=_b.f)
+1638:AD_FILES_TLM=$(AD_FILES:.f=_d.f)
+1659:	$(TAPENADECMD) -b $(TAP_EXTRA) $(TAPENADE_FLAGS) $(AD_FILES) f95_test_mods.f90

@@ -1,0 +1,9 @@
+ &DIAGNOSTICS_LIST
+  diag_mnc = .FALSE.,
+  fields(1,1) = 'UVELMASS',
+  fileName(1) = 'UVELMASS_6h',
+  frequency(1) = 21600.,
+  timePhase(1) = 0.,
+ &
+ &DIAG_STATIS_PARMS
+ &

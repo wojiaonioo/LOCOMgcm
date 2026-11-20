@@ -1,0 +1,79 @@
+# HYCOM redownload config (BULK mode — only used by `redownload_hycom.py --mode=bulk`)
+#
+# The default mode is `split` which bypasses ocean_downloader and issues
+# 32 small NCSS sub-requests per day (4 vars × 8 timesteps), then merges
+# them locally with xarray. That config is held in CLI flags / DEFAULT_AREA
+# in scripts/redownload_hycom.py — this YAML is only consulted in --mode=bulk.
+#
+# Source: HYCOM GLBy0.08/expt_93.0 (2018-01-01 to 2024-08-10).
+#
+# Domain matches existing data exactly:
+#   lat 0..45 (n=1126, dlat=0.04)
+#   lon 94.9599609375..170.0 (n=939, dlon≈0.078125)
+#
+# If running through a proxy, export http_proxy/https_proxy first.
+# HYCOM NCSS recommends sequential requests; parallel is OFF.
+
+version: 1
+
+global:
+  logging:
+    level: INFO
+    file: outputs/hycom_redownload.log
+  retries:
+    enabled: true
+    max_retries: 5
+    backoff_seconds: 5
+    backoff_multiplier: 2
+  concurrency:
+    enabled: false
+    max_workers: 1
+
+products:
+  - name: hycom_uvts_2019_2023_3hour
+    type: hycom_ncss
+    enabled: true
+    params:
+      ncss_base_url: "https://ncss.hycom.org/thredds/ncss/grid/"
+      request_timeout_seconds: 1800
+
+      variables:
+        - water_u
+        - water_v
+        - water_temp
+        - salinity
+
+      experiments:
+        - name: gofs31_analysis_expt_93_0
+          start_datetime: "2018-01-01T00:00:00"
+          end_datetime: "2024-08-10T00:00:00"
+          dataset_urlpath: "GLBy0.08/expt_93.0"
+          timestep_hours: 3
+
+      subset:
+        time_range:
+          start_datetime: "2019-01-01T00:00:00"
+          end_datetime: "2024-01-01T00:00:00"
+          frequency: "1D"
+          include_end: false
+          hour_interval: 3
+          parallel:
+            enabled: false
+            max_workers: 1
+
+        area:
+          # Match existing files cell-for-cell (file lon[0] = 94.9599609375).
+          minimum_longitude: 94.9599609375
+          maximum_longitude: 170.0
+          minimum_latitude: 0.0
+          maximum_latitude: 45.0
+
+      request:
+        accept: netcdf4
+        horiz_stride: 1
+
+      output:
+        directory: data/hycom_uvts_2019-2023_3hour
+        filename_pattern: "{year}/{year}-{month}/hycom_uvts_{date}.nc"
+        overwrite: false
+        skip_existing: true

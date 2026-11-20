@@ -1,0 +1,535 @@
+# South China Sea (99-129E, 1.5-30N), 160 x 152 x 90 grid, hydrostatic, 29 days from 2019-07-15; LOCOMgcm compared with MITgcm.
+schema_version: 0.1.0
+run:
+  experiment_name: scs-bench
+  device: cuda
+  preprocess: true
+  start_date: 2019-07-15
+
+grid:
+  nx: 160
+  ny: 152
+  nz: 90
+  center_lat: 15.75
+  center_lon: 114.0
+  resolution_deg: 0.1875
+  depth_m: 5500
+  vertical_layer_thicknesses:
+    - 5
+    - 5
+    - 5
+    - 5
+    - 5
+    - 5
+    - 5
+    - 5
+    - 5
+    - 5
+    - 10
+    - 10
+    - 10
+    - 10
+    - 10
+    - 10
+    - 10
+    - 10
+    - 10
+    - 10
+    - 10
+    - 10
+    - 10
+    - 10
+    - 10
+    - 25
+    - 25
+    - 25
+    - 25
+    - 25
+    - 25
+    - 25
+    - 25
+    - 25
+    - 25
+    - 25
+    - 25
+    - 25
+    - 25
+    - 25
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 50
+    - 200
+    - 200
+    - 200
+    - 200
+    - 200
+    - 200
+    - 200
+    - 200
+    - 200
+    - 200
+    - 200
+    - 200
+    - 200
+    - 200
+    - 200
+    - 85
+    - 85
+    - 85
+    - 85
+    - 85
+
+time:
+  days: 29
+  dt: 120
+  dt_mom: 120
+  dt_freesurf: 120
+  dt_tracer: 120
+  dt_clock: 120
+
+mit_parallel:
+  nPx: 5
+  nPy: 8
+  sNx: null
+  sNy: null
+  OLx: 4
+  OLy: 4
+
+physics:
+  nonlin_free_surf: 0
+  enable_vertical_shear: false
+  split_coriolis: true
+  nonhydrostatic:
+    enabled: false
+  viscosity: 500.0
+  viscosity_scheme: leith_smag
+  diffusivity: 100.0
+  implicit_viscosity: 0.001
+  implicit_vertical_advection:
+    temperature: true
+    salinity: true
+    momentum: true
+  tracer:
+    implicit_vertical_diffusion: true
+    diffusivity_kr: 1.0e-05
+  ke_scheme: 0
+
+advection:
+  vertical: upwind
+  tracer: dst3_fl
+  multi_dim: true
+
+boundary:
+  type: open
+  scheme: clamped
+  sides:
+  - N
+  - E
+  - S
+  - W
+  sponge_width: 3
+  sponge_mode: mitgcm
+  sponge_timescale_hours: 1
+  sponge_timescale_inner_hours: 72
+
+mit_comparison:
+  enabled: true
+  sync_from_to: true
+  viscA4: 0.0
+
+cache:
+  root: outputs/data/_cache
+  reuse: true
+  cleanup_policy: never
+
+output:
+  root: outputs/data
+  legacy_layout: true
+  monitor_interval_steps: 180
+  nc_output_interval_hours: 6.0
+  snapshot_interval_hours: 6.0
+
+observations:
+  section_transport_u: {i_face: 82, j0: 99, j1: 112}
+
+sources:
+  hycom:
+    type: hycom_netcdf
+    path: external:hycom_dir
+    start_date: 2019-07-15
+    # tRef, sRef: the layer means of the prepared initial state the paper run
+    # resolved (resolve_reference_profiles), stated so that they do not follow
+    # a later preparation of that state.
+    t_ref: [29.346492447798592, 29.33199848112337, 29.290097829935313, 29.20789936088901, 29.07588663176816, 28.884166119954926, 28.645048674315206, 28.334404463891293, 27.96614397613552, 27.55831940091963, 26.88516162231683, 25.871889279348842, 24.802662236747736, 23.81616052641705, 22.951195390065248, 22.18144172765848, 21.43298010091541, 20.661158307688257, 20.015363684838995, 19.361983789400647, 18.7750346810473, 18.25207212136006, 17.729738486730728, 17.201265452886286, 16.670075213057697, 15.952551429240245, 15.043696291553134, 14.247652882851042, 13.559100332802867, 12.931867303225811, 12.358385728519472, 11.832117769885993, 11.340990133805581, 10.891826903929305, 10.49912162612581, 10.104091375867721, 9.706636200511724, 9.357464900927532, 9.054944953354646, 8.756492491932692, 8.305112832208849, 7.861354726173805, 7.41886356613743, 7.074262339660071, 6.725277251345318, 6.43605512559577, 6.146131312473586, 5.910185969458485, 5.673498607422125, 5.513095966883045, 5.3499255749474735, 5.186184765289895, 5.019425670065165, 4.851437840412197, 4.7773498967538455, 4.701824102717343, 4.6288941445440575, 4.553723021049766, 4.475148787716326, 4.445471380265264, 4.417373696385082, 4.392885236705759, 4.372132603882722, 4.350264883388983, 4.326679723661159, 4.3010200709593285, 4.280475153792432, 4.251108512227156, 4.223719512954308, 4.2058307748499, 4.160899946657961, 4.120035863347865, 4.108595463928421, 4.139705704614374, 4.1721769821241885, 4.2254065855752545, 4.262260183906131, 4.316804767171478, 4.371948189362542, 4.4782182104269035, 4.64573875808801, 4.893542212209353, 5.164838816068935, 5.28937279769477, 5.521534406330288, 5.924839595104097, 6.087412637970521, 6.360744838683669, 6.688946037931366, 7.181156463650031]
+    s_ref: [33.76730916083651, 33.786566794940896, 33.80982585735309, 33.834850187823875, 33.869914970480856, 33.90922141046697, 33.94994160122209, 33.998087293664, 34.04873768542572, 34.10107120526392, 34.17494977325048, 34.28107348706311, 34.38202761107965, 34.45941835312321, 34.51359106694682, 34.54688106643878, 34.5699192386004, 34.59312753515013, 34.59876136055466, 34.60462419430397, 34.602096206428264, 34.59195641065352, 34.58156264571738, 34.57107309707998, 34.56038523541993, 34.54171957494161, 34.51458516901749, 34.49082415673416, 34.47000779156346, 34.44929635812227, 34.428802323269174, 34.41084460778298, 34.39507360702759, 34.38234029334405, 34.372700491781764, 34.36299823453508, 34.35325430844126, 34.34712325246364, 34.34514566344154, 34.34314700868838, 34.340076270428206, 34.351082361571585, 34.361855673271485, 34.372659037706484, 34.38354645874665, 34.40194483703918, 34.42049853899096, 34.43210060606975, 34.44380632197938, 34.451395055972604, 34.45909353499049, 34.46656093170506, 34.474063609064025, 34.481690958936895, 34.487252833506275, 34.492726340393006, 34.4981998790335, 34.50374606760769, 34.50914915532708, 34.512172815205695, 34.515114402907265, 34.51828125748706, 34.52130638037554, 34.52440695978792, 34.527574447239004, 34.53072870304398, 34.53397175763897, 34.537248320852136, 34.54047910278828, 34.54147990826197, 34.54530719866402, 34.55041239168236, 34.553661658034464, 34.553360858334585, 34.55282007087086, 34.55002581362682, 34.547135370772416, 34.54369583794725, 34.53935287794249, 34.53265941060132, 34.521910217694284, 34.50505707861054, 34.487728623293876, 34.47763934232425, 34.461242500122054, 34.43229491124826, 34.42206168486247, 34.405710096649514, 34.386081491613936, 34.35686093643264]
+  era5:
+    type: era5_netcdf
+    path: external:era5_dir
+  gebco:
+    type: gebco_netcdf
+    path: external:gebco_file
+
+pipelines:
+  stage1a_prepare_common:
+  - name: state
+    primary_source: hycom
+    operators:
+    - op: subset_vars
+      vars:
+      - temperature
+      - salinity
+      - u
+      - v
+      - eta
+    - op: mask_land_sentinel
+      flag_vars:
+      - temperature
+      - salinity
+    - op: fill_edges
+      dims:
+      - z
+    - op: vertical_interp
+      target_grid: model_grid
+      method: linear
+    - op: grid_interp
+      target_grid: model_grid
+      method: bilinear
+    - op: fill_edges
+      dims:
+      - longitude
+      - latitude
+      fillna: 0.0
+    consumer: prepared_state_zarr
+  - name: forcing
+    primary_source: era5
+    operators:
+    - op: grid_interp
+      target_grid: model_grid
+      method: bilinear
+    consumer: prepared_forcing_zarr
+  - name: boundary
+    primary_source: hycom
+    operators:
+    - op: subset_vars
+      vars:
+      - temperature
+      - salinity
+      - u
+      - v
+      - eta
+    - op: mask_land_sentinel
+      flag_vars:
+      - temperature
+      - salinity
+    - op: fill_edges
+      dims:
+      - z
+    - op: vertical_interp
+      target_grid: model_grid
+      method: linear
+    - op: grid_interp
+      target_grid: model_grid
+      method: bilinear
+    - op: fill_edges
+      dims:
+      - longitude
+      - latitude
+      fillna: 0.0
+    - op: subset_boundary
+      sides:
+      - N
+      - E
+      - S
+      - W
+      width: 3
+    consumer: prepared_boundary_zarr
+  - name: mesh
+    primary_source: gebco
+    operators:
+    - op: subset_to_domain
+    - op: grid_interp
+      target_grid: model_grid
+      method: bilinear
+    - op: convention_convert
+      to: torchocean
+    consumer: prepared_mesh_zarr
+  stage1b_export_to:
+  - name: to_obc
+    primary_source: stage1a_boundary
+    operators:
+    - op: convention_convert
+      to: torchocean
+    consumer: torchocean_obc_zarr
+  stage1c_export_mit:
+  - name: mit_bathy
+    primary_source: stage1a_mesh
+    operators:
+    - op: bathy_clamp
+      depth_max: 5500
+    - op: convention_convert
+      to: mitgcm
+    consumer: mitgcm_bathy_binary
+  - name: mit_ic
+    primary_source: stage1a_initial_state
+    operators: []
+    consumer: mitgcm_ic_binary
+  - name: mit_obc
+    primary_source: stage1a_boundary
+    operators:
+    - op: convention_convert
+      to: mitgcm
+    consumer: mitgcm_obc_binary
+  - name: mit_exf
+    primary_source: stage1a_forcing
+    operators:
+    - op: wind_to_stress
+    - op: convention_convert
+      to: mitgcm
+    consumer: mitgcm_exf_binary
+  - name: mit_size
+    primary_source: stage1a_mesh
+    operators:
+    - op: extract_mesh_dims
+    - op: compute_mpi_topology
+      target_nProcs: 40
+    consumer: mitgcm_size_h
+    consumer_config:
+      nz: 90
+  - name: mit_data
+    primary_source: stage1a_initial_state
+    operators: []
+    consumer: mitgcm_data_namelist
+  - name: mit_eedata
+    primary_source: stage1a_initial_state
+    operators: []
+    consumer: mitgcm_eedata
+  - name: mit_topology
+    primary_source: stage1a_mesh
+    operators:
+    - op: compute_mpi_topology
+      target_nProcs: 40
+    consumer: mitgcm_topology
+  - name: mit_exf_namelist
+    primary_source: stage1a_boundary
+    operators: []
+    consumer: mitgcm_exf_namelist
+    consumer_config:
+      stress_period_hours: 6.0
+  - name: mit_cal
+    primary_source: stage1a_initial_state
+    operators: []
+    consumer: mitgcm_cal_namelist
+  - name: mit_pkg
+    primary_source: stage1a_initial_state
+    operators: []
+    consumer: mitgcm_pkg_namelist
+    consumer_config:
+      use_exf: true
+      use_cal: false
+  - name: mit_kpp
+    primary_source: stage1a_initial_state
+    operators: []
+    consumer: mitgcm_kpp_namelist
+  - name: mit_diagnostics
+    primary_source: stage1a_initial_state
+    operators: []
+    consumer: mitgcm_diagnostics_namelist
+  - name: mit_packages_conf
+    primary_source: stage1a_mesh
+    operators: []
+    consumer: mitgcm_packages_conf
+    consumer_config:
+      packages:
+      - gfd
+      - obcs
+      - kpp
+      - exf
+  - name: mit_obcs
+    primary_source: stage1a_boundary
+    operators: []
+    consumer: mitgcm_obcs_namelist
+  - name: mit_cpp_options
+    primary_source: stage1a_mesh
+    operators: []
+    consumer: mitgcm_cpp_options
+    consumer_config:
+      extra_undefs:
+        - ALLOW_DEBUG
+      extra_defines:
+        - EXACT_CONSERV
+        - SHORTWAVE_HEATING
+  - name: mit_exf_options
+    primary_source: stage1a_mesh
+    operators: []
+    consumer: mitgcm_exf_options
+  - name: mit_obcs_options
+    primary_source: stage1a_mesh
+    operators: []
+    consumer: mitgcm_obcs_options
+
+case:
+  kind: regional
+  extras:
+    framework: true
+    ic_source: zarr_bundle
+    ic_source_extras:
+      stage1b_consumer: torchocean_ic_zarr
+    obcs_source: zarr_bundle
+    obcs_source_extras:
+      stage1b_consumer: torchocean_obc_zarr
+    forcing_source: era5_netcdf
+    forcing_source_extras:
+      time_mode: linear
+    case_type: hycom_comparison
+    case_name: scs-hires
+    description: LOCOMgcm vs MITgcm comparison for SCS high-resolution 1/24° run
+    west_east_boundary: open
+    south_north_boundary: open
+    grid_mode: spherical_polar
+    r_sphere: 6370000.0
+    hfac_min: 0.2
+    hfac_min_dz: 0.0
+    obcs_sides:
+    - N
+    - E
+    - S
+    - W
+    obcs_along: 160
+
+model:
+  dynamics:
+  - name: linear_free_surface_continuity
+  - name: linear_free_surface_pressure_gradient
+    kwargs:
+      gravity: 9.81
+  - name: horizontal_tracer_advection
+    kwargs:
+      scheme: dst3_fl
+      tracer_names: [temp, salt]
+      multi_dim: true
+      use_advective_form: false
+      dt: 120.0
+      obcs_upwind: false
+  - name: vector_invariant_momentum_advection
+    kwargs:
+      coriolis_parameter: $coriolis_parameter
+      coriolis_profile_g: $coriolis_profile_g
+      enable_vertical_shear: false
+      split_coriolis: true
+      select_ke_scheme: 0
+  - name: era5_wind_forcing
+    kwargs:
+      reference_density: 1025.0
+  - name: bottom_drag
+    kwargs:
+      linear: 2.0e-4
+      quadratic: 0.0025
+      vertical_viscosity: 0.001
+  - name: surface_heat_salt_flux
+    kwargs:
+      lin_fs_conserve_tr: false
+  - name: tracer_boundary_sponge_relaxation
+    kwargs:
+      width: 3
+      timescale_seconds: 3600.0
+      timescale_inner_seconds: 259200.0
+      sponge_mode: mitgcm
+      use_linear_sponge: false
+      time_mode: linear
+      ab2_eligible: false
+  - name: momentum_boundary_sponge_relaxation
+    kwargs:
+      width: 3
+      timescale_seconds: 3600.0
+      timescale_inner_seconds: 259200.0
+      sponge_mode: mitgcm
+      use_linear_sponge: false
+      time_mode: linear
+      balance_obcs_targets: true
+      zero_tangential_targets: false
+  - name: horizontal_viscosity
+    kwargs:
+      viscosity: 500.0
+      no_slip_sides: false
+      viscosity_scheme: leith_smag
+      visc_c2_leith: 1.0
+      visc_c2_smag: 3.0
+  - name: horizontal_tracer_diffusion
+    kwargs:
+      diffusivity: 100.0
+      tracer_names: [temp, salt]
+  - name: jmd95_equation_of_state
+    kwargs:
+      reference_density: 1025.0
+      dynamic_pressure: true
+  - name: hydrostatic_pressure_gradient
+    kwargs:
+      gravity: 9.81
+      reference_density: 1025.0
+  - name: diagnostic_vertical_velocity
+  stepper:
+    name: implicit_free_surface
+    kwargs:
+      gravity: 9.81
+      implicit_surf_press: 1.0
+      implicit_div_2d_flow: 1.0
+      implicit_viscosity: 0.001
+      nonlin_free_surf: 0
+      select_r_star: 0
+      stagger_tracer_stepping: true
+      mom_forcing_out_ab: true
+      ab_eps: 0.1
+      ab2_on_tracer_tendency: false
+      exact_conserv: true
+      implicit_tracer_diffusion: true
+      tracer_vertical_diffusivity_kr: 1.0e-05
+      kpp_enabled: true
+
+      kpp_sign_zero: positive
+      nonhydrostatic:
+        nonhydrostatic: false
+        cg3d_max_iters: 150
+        cg3d_target_residual: 1.0e-07
+        cg3d_target_res_w_unit: -1.0
+        nh_am2: 1.0
+  boundary_condition:
+    name: prescribed_3d
+    kwargs:
+      use_barotropic_source: true
+      time_mode: linear
+      tangential_zero_mode: none
+      enforce_obcs_balance: true
+      apply_tangential_velocity: true
+
+checkpoint:
+  enabled: true
+  every_steps: 720
+  keep_last: 2
+  backend: thread

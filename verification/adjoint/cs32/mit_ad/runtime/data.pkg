@@ -1,0 +1,10 @@
+ &PACKAGES
+ useCTRL=.TRUE.,
+ useGMRedi=.FALSE.,
+ useKPP=.FALSE.,
+ useEXF=.FALSE.,
+ useTHSICE=.FALSE.,
+ useDiagnostics=.FALSE.,
+ useMNC=.FALSE.,
+ useGrdchk=.FALSE.,
+ &

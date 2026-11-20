@@ -1,0 +1,15 @@
+ &CTRL_NML
+ doInitXX=.FALSE., doMainUnpack=.FALSE., doMainPack=.FALSE., ctrlprec=64,
+ &
+ &CTRL_PACKNAMES
+ &
+ &CTRL_NML_GENARR
+ xx_genarr3d_file(1)='xx_theta', xx_genarr3d_weight(1)='ones_64b.bin',
+ xx_genarr3d_file(2)='xx_salt', xx_genarr3d_weight(2)='ones_64b.bin',
+ xx_gentim2d_file(1)='xx_fu', xx_gentim2d_weight(1)='ones_64b.bin',
+ xx_gentim2d_period(1)=2592000.,
+ xx_gentim2d_file(2)='xx_fv', xx_gentim2d_weight(2)='ones_64b.bin',
+ xx_gentim2d_period(2)=2592000.,
+ xx_gentim2d_file(3)='xx_qnet', xx_gentim2d_weight(3)='ones_64b.bin',
+ xx_gentim2d_period(3)=2592000.,
+ &
