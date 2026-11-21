@@ -1,0 +1,13 @@
+schema_version = 1
+
+[paths]
+# Copy this file outside the source checkout and set LOCOMGCM_PATHS.
+# Omit unused root/pin pairs together. Replace every placeholder before use.
+mitgcm_root = "/absolute/path/to/MITgcm"
+mitgcm_pin = "REPLACE_WITH_FULL_40_CHARACTER_COMMIT"
+mitgcm_ad_root = "/absolute/path/to/MITgcm-AD"
+mitgcm_ad_pin = "REPLACE_WITH_FULL_40_CHARACTER_COMMIT"
+cs32_grid_dir = "/absolute/path/to/cs32/geometry"
+cs32_input_dir = "/absolute/path/to/cs32/inputs"
+conda_root = "/absolute/path/to/conda"
+mitgcm_optfile = "/absolute/path/to/native/build_options"

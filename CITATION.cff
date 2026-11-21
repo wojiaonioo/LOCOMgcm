@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use LOCOMgcm, please cite the software and state the Git commit you used."
+title: "LOCOMgcm: a differentiable ocean general circulation model in PyTorch"
+type: software
+authors:
+  - family-names: Tang
+    given-names: Haoyang
+  - family-names: Xu
+    given-names: Hongzhou
+    email: hzxu@idsse.ac.cn
+  - family-names: Hong
+    given-names: Bo
+  - family-names: Zhou
+    given-names: Wei
+version: 0.1.0
+license: GPL-3.0-only
+repository-code: "https://github.com/wojiaonioo/LOCOMgcm"

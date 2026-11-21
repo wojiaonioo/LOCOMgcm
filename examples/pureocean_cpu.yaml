@@ -1,0 +1,19 @@
+# Overlay for experiments/configs/cases/pureocean.yaml: CPU device, the
+# synthetic inputs written by examples/make_synthetic_inputs.py, a 60-step run
+# and a NetCDF frame every 20 steps (2400 s). Set synthetic_pureocean_dir in
+# LOCOMGCM_PATHS or LOCOMGCM_SYNTHETIC_PUREOCEAN_DIR to the generated input directory.
+run:
+  device: cpu
+  experiment_name: pureocean_cpu
+time:
+  steps: 60
+output:
+  snapshot_interval_seconds: 2400
+  nc_output_interval_seconds: 2400
+sources:
+  hycom:
+    path: external:synthetic_pureocean_dir/hycom
+  era5:
+    path: external:synthetic_pureocean_dir/era5
+  gebco:
+    path: external:synthetic_pureocean_dir/gebco.nc

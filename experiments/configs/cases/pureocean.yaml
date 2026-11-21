@@ -1,0 +1,409 @@
+# Small 36 x 36 x 10 regional ocean on synthetic inputs (see examples/), 7 days; runs on a CPU.
+schema_version: 0.1.0
+run:
+  experiment_name: pureocean
+  device: cuda
+  preprocess: true
+  start_date: 2019-01-01
+
+grid:
+  nx: 36
+  ny: 36
+  nz: 10
+  center_lat: 11.75
+  center_lon: 111.75
+  resolution_deg: 0.08333333
+  depth_m: 1000.0
+  vertical_layer_thicknesses:
+    - 100.0
+    - 100.0
+    - 100.0
+    - 100.0
+    - 100.0
+    - 100.0
+    - 100.0
+    - 100.0
+    - 100.0
+    - 100.0
+
+time:
+  dt: 120
+  dt_mom: 120
+  dt_freesurf: 120
+  dt_tracer: 120
+  dt_clock: 120
+  days: 7
+
+mit_parallel:
+  nPx: 1
+  nPy: 1
+  OLx: 4
+  OLy: 4
+
+physics:
+  nonlin_free_surf: 0
+  enable_vertical_shear: true
+  split_coriolis: true
+  viscosity: 500.0
+  diffusivity: 100.0
+  implicit_viscosity: 1.0e-3
+  ke_scheme: 0
+
+advection:
+  vertical: upwind
+  tracer: upwind
+  multi_dim: true
+
+boundary:
+  type: open
+  scheme: clamped
+  sides:
+    - N
+    - E
+    - S
+    - W
+  sponge_width: 3
+  sponge_mode: mitgcm
+  sponge_timescale_hours: 1.0
+  sponge_timescale_inner_hours: 72.0
+
+mit_comparison:
+  enabled: false
+  sync_from_to: true
+  viscA4: 0.0
+
+cache:
+  root: outputs/data/_cache
+  cleanup_policy: never
+
+output:
+  root: outputs/data
+  legacy_layout: true
+  monitor_interval_steps: 50
+  nc_output_interval_hours: 3.0
+  snapshot_interval_hours: 3.0
+
+sources:
+  hycom:
+    type: hycom_netcdf
+    path: external:hycom_dir
+    start_date: 2019-01-01
+  era5:
+    type: era5_netcdf
+    path: external:era5_dir
+  gebco:
+    type: gebco_netcdf
+    path: external:gebco_file
+pipelines:
+  stage1a_prepare_common:
+  - name: state
+    primary_source: hycom
+    operators:
+    - op: subset_vars
+      vars:
+      - temperature
+      - salinity
+      - u
+      - v
+      - eta
+    - op: mask_land_sentinel
+      flag_vars:
+      - temperature
+      - salinity
+    - op: fill_edges
+      dims:
+      - z
+    - op: vertical_interp
+      target_grid: model_grid
+      method: linear
+    - op: grid_interp
+      target_grid: model_grid
+      method: bilinear
+    - op: fill_edges
+      dims:
+      - longitude
+      - latitude
+      fillna: 0.0
+    consumer: prepared_state_zarr
+  - name: forcing
+    primary_source: era5
+    operators:
+    - op: grid_interp
+      target_grid: model_grid
+      method: bilinear
+    consumer: prepared_forcing_zarr
+  - name: boundary
+    primary_source: hycom
+    operators:
+    - op: subset_vars
+      vars:
+      - temperature
+      - salinity
+      - u
+      - v
+      - eta
+    - op: mask_land_sentinel
+      flag_vars:
+      - temperature
+      - salinity
+    - op: fill_edges
+      dims:
+      - z
+    - op: vertical_interp
+      target_grid: model_grid
+      method: linear
+    - op: grid_interp
+      target_grid: model_grid
+      method: bilinear
+    - op: fill_edges
+      dims:
+      - longitude
+      - latitude
+      fillna: 0.0
+    - op: subset_boundary
+      sides:
+      - N
+      - E
+      - S
+      - W
+      width: 3
+    consumer: prepared_boundary_zarr
+  - name: mesh
+    primary_source: gebco
+    operators:
+    - op: subset_to_domain
+    - op: grid_interp
+      target_grid: model_grid
+      method: bilinear
+    - op: convention_convert
+      to: locomgcm
+    consumer: prepared_mesh_zarr
+  stage1b_export_to:
+  - name: to_obc
+    primary_source: stage1a_boundary
+    operators:
+    - op: convention_convert
+      to: locomgcm
+    consumer: locomgcm_obc_zarr
+  stage1c_export_mit:
+  - name: mit_bathy
+    primary_source: stage1a_mesh
+    operators:
+    - op: bathy_clamp
+      depth_max: 1000
+    - op: convention_convert
+      to: mitgcm
+    consumer: mitgcm_bathy_binary
+  - name: mit_ic
+    primary_source: stage1a_initial_state
+    operators: []
+    consumer: mitgcm_ic_binary
+  - name: mit_obc
+    primary_source: stage1a_boundary
+    operators:
+    - op: convention_convert
+      to: mitgcm
+    consumer: mitgcm_obc_binary
+  - name: mit_exf
+    primary_source: stage1a_forcing
+    operators:
+    - op: wind_to_stress
+    - op: convention_convert
+      to: mitgcm
+    consumer: mitgcm_exf_binary
+  - name: mit_size
+    primary_source: stage1a_mesh
+    operators:
+    - op: extract_mesh_dims
+    - op: compute_mpi_topology
+      target_nProcs: 1
+    consumer: mitgcm_size_h
+    consumer_config:
+      nz: 10
+  - name: mit_data
+    primary_source: stage1a_initial_state
+    operators: []
+    consumer: mitgcm_data_namelist
+  - name: mit_eedata
+    primary_source: stage1a_initial_state
+    operators: []
+    consumer: mitgcm_eedata
+  - name: mit_topology
+    primary_source: stage1a_mesh
+    operators:
+    - op: compute_mpi_topology
+      target_nProcs: 1
+    consumer: mitgcm_topology
+  - name: mit_exf_namelist
+    primary_source: stage1a_boundary
+    operators: []
+    consumer: mitgcm_exf_namelist
+    consumer_config:
+      stress_period_hours: 6.0
+  - name: mit_cal
+    primary_source: stage1a_initial_state
+    operators: []
+    consumer: mitgcm_cal_namelist
+  - name: mit_pkg
+    primary_source: stage1a_initial_state
+    operators: []
+    consumer: mitgcm_pkg_namelist
+    consumer_config:
+      use_exf: true
+      use_cal: false
+  - name: mit_packages_conf
+    primary_source: stage1a_mesh
+    operators: []
+    consumer: mitgcm_packages_conf
+    consumer_config:
+      packages:
+      - gfd
+      - obcs
+      - exf
+  - name: mit_obcs
+    primary_source: stage1a_boundary
+    operators: []
+    consumer: mitgcm_obcs_namelist
+  - name: mit_cpp_options
+    primary_source: stage1a_mesh
+    operators: []
+    consumer: mitgcm_cpp_options
+    consumer_config:
+      extra_undefs:
+      - ALLOW_DEBUG
+      extra_defines:
+      - EXACT_CONSERV
+  - name: mit_exf_options
+    primary_source: stage1a_mesh
+    operators: []
+    consumer: mitgcm_exf_options
+  - name: mit_obcs_options
+    primary_source: stage1a_mesh
+    operators: []
+    consumer: mitgcm_obcs_options
+case:
+  kind: regional
+  extras:
+    framework: true
+    ic_source: zarr_bundle
+    ic_source_extras:
+      stage1b_consumer: locomgcm_ic_zarr
+    obcs_source: zarr_bundle
+    obcs_source_extras:
+      stage1b_consumer: locomgcm_obc_zarr
+    forcing_source: era5_netcdf
+    forcing_source_extras:
+      time_mode: linear
+    case_type: hycom_comparison
+    case_name: pureocean-repro
+    description: pureocean regional run (LOCOMgcm; MITgcm comparison when mit_comparison.enabled)
+    west_east_boundary: open
+    south_north_boundary: open
+    grid_mode: spherical_polar
+    r_sphere: 6370000.0
+    hfac_min: 0.2
+    hfac_min_dz: 0.0
+    obcs_sides:
+    - N
+    - E
+    - S
+    - W
+    obcs_along: 36
+
+model:
+  dynamics:
+  - name: linear_free_surface_continuity
+  - name: linear_free_surface_pressure_gradient
+    kwargs:
+      gravity: 9.81
+  - name: horizontal_tracer_advection
+    kwargs:
+      scheme: upwind
+      tracer_names: [temp, salt]
+      multi_dim: true
+      use_advective_form: false
+      dt: 120.0
+      obcs_upwind: true
+  - name: vector_invariant_momentum_advection
+    kwargs:
+      coriolis_parameter: $coriolis_parameter
+      coriolis_profile_g: $coriolis_profile_g
+      enable_vertical_shear: true
+      split_coriolis: true
+      select_ke_scheme: 0
+  - name: era5_wind_forcing
+    kwargs:
+      reference_density: 1025.0
+  - name: bottom_drag
+    kwargs:
+      quadratic: 0.0025
+  - name: surface_heat_salt_flux
+    kwargs:
+      lin_fs_conserve_tr: false
+  - name: tracer_boundary_sponge_relaxation
+    kwargs:
+      width: 3
+      timescale_seconds: 3600.0
+      timescale_inner_seconds: 259200.0
+      sponge_mode: mitgcm
+      use_linear_sponge: false
+      time_mode: linear
+      ab2_eligible: false
+  - name: momentum_boundary_sponge_relaxation
+    kwargs:
+      width: 3
+      timescale_seconds: 3600.0
+      timescale_inner_seconds: 259200.0
+      sponge_mode: mitgcm
+      use_linear_sponge: false
+      time_mode: linear
+      balance_obcs_targets: true
+  - name: horizontal_viscosity
+    kwargs:
+      viscosity: 500.0
+      no_slip_sides: false
+      viscosity_scheme: constant
+      visc_c2_leith: 0.0
+      visc_c2_smag: 0.0
+  - name: horizontal_tracer_diffusion
+    kwargs:
+      diffusivity: 100.0
+      tracer_names: [temp, salt]
+  - name: jmd95_equation_of_state
+    kwargs:
+      reference_density: 1025.0
+  - name: hydrostatic_pressure_gradient
+    kwargs:
+      gravity: 9.81
+      reference_density: 1025.0
+  - name: diagnostic_vertical_velocity
+  stepper:
+    name: implicit_free_surface
+    kwargs:
+      gravity: 9.81
+      implicit_surf_press: 1.0
+      implicit_div_2d_flow: 1.0
+      implicit_viscosity: 0.001
+      nonlin_free_surf: 0
+      select_r_star: 0
+      stagger_tracer_stepping: true
+      mom_forcing_out_ab: true
+      ab2_on_tracer_tendency: false
+      ab_eps: 0.1
+      exact_conserv: true
+      implicit_tracer_diffusion: true
+      tracer_vertical_diffusivity_kr: 1.0e-05
+      nonhydrostatic:
+        nonhydrostatic: false
+        cg3d_max_iters: 150
+        cg3d_target_residual: 1.0e-07
+        cg3d_target_res_w_unit: -1.0
+        nh_am2: 1.0
+  boundary_condition:
+    name: prescribed_3d
+    kwargs:
+      use_barotropic_source: true
+      time_mode: linear
+      tangential_zero_mode: none
+      enforce_obcs_balance: true
+      apply_tangential_velocity: true

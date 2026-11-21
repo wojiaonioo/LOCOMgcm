@@ -1,0 +1,64 @@
+#!/bin/bash
+# =============================================================================
+# Optfile for regional and internal-wave comparisons:
+#   ifx (Intel Fortran from the conda build environment, NETCDF_PREFIX or the
+#   active CONDA_PREFIX) + system OpenMPI 4.1.5.
+#   Select MPI binaries compatible with the execution host libc.
+#
+#   ifx must be invoked directly (not through mpif90 wrapper, which is
+#   hardwired to gfortran).  We emit the same -I/-L/-l flags that
+#   `OMPI_FC=ifx mpif90 --showme:{compile,link}` would emit.
+# =============================================================================
+
+CC=icx
+FC=ifx
+F90C=ifx
+LINK=$F90C
+
+CONDA_ENV=${NETCDF_PREFIX:-${CONDA_PREFIX:?set NETCDF_PREFIX or activate the build environment}}
+OMPI_DIR=/usr/mpi/gcc/openmpi-4.1.5a1
+
+# Force system cpp + -P so MITgcm cpp markers are stripped before Fortran
+# compilation (ifx 2024 rejects '# 1 ...' line markers with error #6218).
+CPP="/usr/bin/cpp -traditional -P"
+
+# MITgcm genmake2 with -mpi grep INCLUDES for "mpif.h"-bearing path.
+INCLUDES="-I${OMPI_DIR}/include -I${CONDA_ENV}/include"
+MPIINCLUDEDIR="${OMPI_DIR}/include"
+
+# Linker — same trio as conda Intel MPI optfile:
+#   * --no-relax avoids GOTPCREL relax failures from -mcmodel=medium
+#   * -rpath bakes OpenMPI lib64 so binary doesn't need LD_LIBRARY_PATH for MPI
+#   * Fortran MPI symbols live in libmpi_mpifh / usempif08 / usempi_ignore_tkr
+LIBS="-Wl,--no-relax"
+LIBS="$LIBS -L${OMPI_DIR}/lib64 -Wl,-rpath -Wl,${OMPI_DIR}/lib64"
+LIBS="$LIBS -lmpi_usempif08 -lmpi_usempi_ignore_tkr -lmpi_mpifh -lmpi"
+LIBS="$LIBS -L${CONDA_ENV}/lib -lnetcdff -lnetcdf"
+
+DEFINES='-DWORDLENGTH=4 -DALLOW_USE_MPI'
+F90FIXEDFORMAT='-fixed -Tf'
+EXTENDED_SRC_FLAG='-132'
+GET_FC_VERSION="--version"
+OMPFLAG='-qopenmp'
+
+NOOPTFLAGS='-O0 -g'
+NOOPTFILES=''
+
+CFLAGS="-O3 -ip -m64 -fPIC"
+CFLAGS="$CFLAGS -DADSTACK_MAX_SPACES=200000"
+# MITgcm only passes INCLUDES to CPP; mpif.h transitively `include`s
+# mpif-config.h etc., which the Fortran compiler resolves itself.
+# So mirror the MPI include path into FFLAGS so ifx finds them at -c time.
+FFLAGS="$FFLAGS -m64 -convert big_endian -assume byterecl"
+FFLAGS="$FFLAGS -mcmodel=medium"
+FFLAGS="$FFLAGS -W0 -WB"
+FFLAGS="$FFLAGS -I${OMPI_DIR}/include"
+
+if test "x$IEEE" = x ; then
+    FOPTIM='-O2 -align -fp-model source -xHost'
+else
+    FOPTIM="-O0 -fp-model precise"
+fi
+
+F90FLAGS=$FFLAGS
+F90OPTIM=$FOPTIM

@@ -1,0 +1,8 @@
+ &AUTODIFF_PARM01
+ inAdExact=.TRUE.,
+ cg2dFullAdjoint=.FALSE.,
+ useKPPinAdMode=.TRUE.,
+ useApproxAdvectionInAdMode=.FALSE.,
+ viscFacInAd=1.,
+ viscFacInFw=1.,
+ &

@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "locomgcm"
+version = "0.1.0"
+description = "Differentiable regional and global ocean model in PyTorch"
+requires-python = ">=3.11"
+license = {text = "GPL-3.0-only"}
+dynamic = ["dependencies"]
+
+[tool.setuptools]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements-runtime.txt"]}
+
+[tool.setuptools.packages.find]
+include = ["locomgcm*", "contracts.valdump*", "helper.preprocess*", "experiments*"]
+
+[tool.setuptools.package-data]
+"experiments" = ["**/*.yaml", "**/*.json", "**/*.sh", "**/*.conf", "**/*.F"]
+"experiments.mitcases.mitref" = ["resources/*.md", "resources/**/*.patch"]
+"locomgcm.solvers._cg2d_fused" = ["*.cu", "*.cpp"]
+"locomgcm.solvers._cg3d_thomas" = ["*.cu", "*.cpp"]
+"locomgcm.solvers._cg3d_fused" = ["*.cu", "*.cpp"]
+"locomgcm.solvers._implicit_vertical_cuda" = ["*.cu", "*.cpp"]
+"locomgcm.solvers._tridiag_cuda" = ["*.cu", "*.cpp", "*.h"]
+"locomgcm.solvers._tridiag_build_cuda" = ["*.cu", "*.cpp"]
+"locomgcm.solvers._cuda_launch" = ["*.h"]
+"locomgcm.operators.fluxes._dst3_cuda" = ["*.cu", "*.cpp", "*.h"]
+"locomgcm.dynamics._vim_coriolis_u_cuda" = ["*.cu", "*.cpp"]
+"locomgcm.dynamics._eos_cuda" = ["*.cu", "*.cpp", "*.cuh"]
+"locomgcm.dynamics._kpp_bldepth_cuda" = ["*.cu", "*.cpp", "*.cuh"]
+"locomgcm.dynamics._kpp_blmix_cuda" = ["*.cu", "*.cpp"]
+"locomgcm.dynamics._kpp_statekpp_cuda" = ["*.cu", "*.cpp", "*.cuh"]
+"locomgcm.dynamics._tracer_adv_fused" = ["*.cu", "*.cpp"]
+"locomgcm.dynamics._kpp_statekpp_fused" = ["*.cu", "*.cpp"]
+"locomgcm.dynamics._kpp_fused" = ["*.cu", "*.cpp", "*.cuh"]
+"locomgcm.dynamics._vim_fused" = ["*.cu", "*.cpp"]
+"locomgcm.dynamics._hvisc_fused" = ["*.cu", "*.cpp"]
+"locomgcm.seaice.dynamics._lsr_cuda" = ["*.cu", "*.cpp"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
