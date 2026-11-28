@@ -1,7 +1,7 @@
 # South China Sea twin experiment
 
-4D-Var, an analysis network trained online, and a network inside the time
-steps in South China Sea twin experiments (160 × 152 × 41 grid, 600 s step,
+4D-Var, an analysis network trained online, and a network evaluated at every
+time step in South China Sea twin experiments (160 × 152 × 41 grid, 600 s step,
 three-day windows, forecasts to day eight). MITgcm runs provide the truth.
 Commands run from the repository root.
 
@@ -89,7 +89,7 @@ python -m experiments.da_twin.run analyze --windows outputs/da_twin/all.json --s
   --bstd experiments/da_twin/b_std.json --out outputs/da_twin/network
 ```
 
-## Network inside the time steps and evaluation
+## Network evaluated at every time step, and evaluation
 
 ```sh
 python -m experiments.da_twin.instep --windows outputs/da_twin/all.json \

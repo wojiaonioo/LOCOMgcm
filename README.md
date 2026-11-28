@@ -3,9 +3,10 @@
 LOCOMgcm is a differentiable ocean general circulation model developed by
 the Laboratory of Ocean Circulation Observing and Modeling (LOCOM) at the
 Institute of Deep-sea Science and Engineering, Chinese Academy of Sciences.
-It is differentiable and fast, and its integrations and gradients agree with
-MITgcm and its Tapenade adjoint to within the differences between two MITgcm
-runs with reordered sums. LOCOMgcm implements the MITgcm ocean discretizations in PyTorch, supports
+It is differentiable and fast, and over the South China Sea its integrations
+and gradients match those of MITgcm and its Tapenade adjoint, with differences
+comparable to those between two MITgcm runs differing only in summation order.
+LOCOMgcm implements the MITgcm ocean discretizations in PyTorch, supports
 regional and global grids, and runs on NVIDIA GPUs.
 
 **LOCOMgcm: A Differentiable, Fast Ocean General Circulation Model in PyTorch**
@@ -34,15 +35,16 @@ the right.
 
 LOCOMgcm cannot reproduce MITgcm bit for bit, because the order of
 floating-point operations differs between the two codes, between compilers,
-and between CPUs and GPUs. Each comparison therefore includes a reference
-pair: two MITgcm runs with different process decompositions, which differ
-only in the order of their global sums.
+and between CPUs and GPUs. The size of a rounding difference of MITgcm is
+therefore measured with a reference pair: two MITgcm runs with different
+process decompositions. In the forward integration, the two decompositions
+change only the order of the global sums.
 
 ### Forward integration
 
 ![RMS temperature differences over the 29-day simulations on the two regional grids](docs/assets/fig-agree-en.svg)
 
-RMS temperature differences over all wet cells, sampled every six hours, on
+RMS temperature differences over all ocean points, sampled every six hours, on
 (a) the 960 × 912 × 90 grid and (b) the 160 × 152 × 90 grid. Blue compares
 LOCOMgcm with MITgcm; orange compares the two MITgcm runs of the reference
 pair. All runs use double precision (FP64). In (a) the differences are
@@ -50,8 +52,8 @@ computed from single-precision (FP32) copies of the output, and the times
 before day 1, whose differences FP32 cannot resolve, are left out. In (b)
 they are computed from the FP64 output.
 
-RMS differences of the 29-day South China Sea integrations over all wet
-points and saved times (every six hours):
+RMS differences of the 29-day South China Sea integrations over all ocean
+points and output times (every six hours):
 
 | Field | 960 × 912 × 90: LOCOMgcm − MITgcm | 960 × 912 × 90: reference pair | 160 × 152 × 90: LOCOMgcm − MITgcm | 160 × 152 × 90: reference pair |
 |---|---|---|---|---|
@@ -87,7 +89,7 @@ section.
 
 | Configuration | Window | Controls | Cost functions | Gradients |
 |---|---|---|---|---|
-| South China Sea, 160 × 152 × 90 | 12 hours, 360 steps | Initial temperature and salinity, 731,898 wet cells each | 2.9 × 10⁻¹⁴ | 7.1 × 10⁻¹¹ |
+| South China Sea, 160 × 152 × 90 | 12 hours, 360 steps | Initial temperature and salinity, 731,898 ocean points each | 2.9 × 10⁻¹⁴ | 7.1 × 10⁻¹¹ |
 | Global latitude-longitude, 90 × 40 × 15 | 50 days, 3600 steps | Initial temperature and salinity, wind stress and heat flux, 237,600 values | 1.9 × 10⁻¹³ | 5.5 × 10⁻¹¹ |
 | Cubed sphere, 32 × 32 columns per face, 15 levels | 50 days, 3600 steps | Initial temperature, salinity and horizontal velocity, 215,520 values | 4.3 × 10⁻¹¹ | 3.4 × 10⁻⁹ |
 
@@ -101,7 +103,7 @@ In a three-day window of the twin experiment (160 × 152 × 41 cells with KPP
 and open boundaries), the cost function is the volume-mean temperature of a
 box at the end of the window, and the controls are the initial temperature
 and salinity. The relative differences below divide the largest and the RMS
-difference over the 372,522 wet cells of each control by the largest and the
+difference over the 372,522 ocean points of each control by the largest and the
 RMS gradient of the MITgcm adjoint with the 5 × 8 decomposition. The
 reference pair consists of the MITgcm adjoint runs with the 4 × 4 and 5 × 8
 decompositions.
@@ -115,9 +117,14 @@ decompositions.
 
 ![Time per step by grid size, GPU count and MITgcm CPU core count](docs/assets/fig-perf-en.svg)
 
-Time per step in double precision. Left: N × N × 90 grids with LOCOMgcm on
-one, two and four A800 GPUs and MITgcm on CPUs. Right: the MITgcm CPU core
-count comparison at N = 960 against LOCOMgcm on one, two and four GPUs.
+Time per step of the forward integration in double precision. Left: LOCOMgcm
+on one, two and four A800 GPUs in the hydrostatic configuration and on two and
+four GPUs in the nonhydrostatic configuration, against the grid size N of the
+N × N × 90 grids. Gray marks MITgcm: the fastest hydrostatic time of each grid
+over the tested core counts (640 to 896 cores), and the nonhydrostatic time at
+N = 960 on 640 cores, its fastest tested core count. Right: hydrostatic steps
+per second on the 960 × 960 × 90 grid, MITgcm against its number of CPU cores
+and LOCOMgcm on one, two and four GPUs (horizontal lines).
 
 Time per step of the hydrostatic forward integration on N × N × 90 grids, in
 ms. The MITgcm column gives the fastest run of each grid over the tested
@@ -150,9 +157,10 @@ per step and MITgcm 821.8 ms on 640 cores, its fastest tested core count, so
 the step is 3.5 times as fast. From N = 960 on, each doubling of the number
 of GPUs shortens the hydrostatic step by a factor of 1.8 to 1.9.
 
-One gradient evaluation over a window of 100 steps, with a state stored at
-every step, costs 2.9 to 5.3 times the forward integration of the same
-window on the grids from N = 160 to N = 1320 on one, two and four GPUs. The
+One gradient evaluation over a window of 100 steps (50 steps on four GPUs
+from N = 1120 on), with a state stored at every step, costs 2.9 to 5.3 times
+the forward integration of the same window on the grids from N = 160 to
+N = 1320 on one, two and four GPUs. The
 exception is one GPU at N = 800, where the intermediate quantities of a step
 nearly fill the memory of the GPU and the gradient costs 14.0 times the
 forward integration.
@@ -237,8 +245,8 @@ settings. The shell driver's header documents these options.
 ## Twin experiment and adjoint builds
 
 `experiments/da_twin/` contains the South China Sea twin experiment: 4D-Var,
-the analysis network trained online, the gradient check of a network inside
-the time steps, and the evaluation. Its README lists the inputs
+the analysis network trained online, the gradient check of a network
+evaluated at every time step, and the evaluation. Its README lists the inputs
 and the commands.
 
 `verification/adjoint/` contains the MITgcm adjoint builds used for the

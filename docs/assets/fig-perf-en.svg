@@ -316,7 +316,7 @@ z
 " style="stroke: #8c8c8c; stroke-linejoin: miter"/>
     </defs>
     <g clip-path="url(#pce526abafa)">
-     <use xlink:href="#m6c4ef8b71f" x="488.851207" y="143.928245" style="fill: #8c8c8c; stroke: #8c8c8c; stroke-linejoin: miter"/>
+     <use xlink:href="#m6c4ef8b71f" x="488.851207" y="171.65059" style="fill: #8c8c8c; stroke: #8c8c8c; stroke-linejoin: miter"/>
     </g>
    </g>
    <g id="patch_3">
@@ -526,7 +526,7 @@ L 149.6 54.016875
      </g>
     </g>
     <g id="text_16">
-     <text style="font-size: 18px; font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif; text-anchor: start" x="164" y="83.278125" transform="rotate(-0 164 83.278125)">MITgcm, nonhydrostatic, 400 cores</text>
+     <text style="font-size: 18px; font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif; text-anchor: start" x="164" y="83.278125" transform="rotate(-0 164 83.278125)">MITgcm, nonhydrostatic, 640 cores</text>
     </g>
     <g id="line2d_34">
      <path d="M 102.8 99.939375 
