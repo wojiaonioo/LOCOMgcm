@@ -931,10 +931,8 @@ def selected_backends(rows: Sequence[tuple]) -> frozenset[tuple[str, str, str, s
     ``inapplicable``: the reference ran instead), so a rank that ran the
     kernel and a rank that ran the reference at the same site differ here.
     Counts and reasons are left out: how often a site dispatches can follow the
-    rank's own data (the Newton and line-search loops of the convective
-    implicit KPP stop per tile, so the KPP batch records 155 calls on one rank
-    and 152 on the other in one two-rank case), and two ranks that both
-    declined for different reasons both ran the reference.
+    rank's own data, and two ranks that both declined for different reasons
+    both ran the reference.
     """
     return frozenset(row[:4] for row in rows)
 

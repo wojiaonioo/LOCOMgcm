@@ -389,7 +389,7 @@ Options that exist only in LOCOMgcm are not listed.
 | `implicitNHPress` | partial | tied to `implicit_surf_press` | Only `implicitNHPress = 1`. |
 | `exactConserv` | yes | `stepper.exact_conserv` | Default true. |
 | Linear free surface (`nonlinFreeSurf=0`) | yes | `stepper.nonlin_free_surf: 0` |  |
-| Nonlinear free surface (`nonlinFreeSurf=1,2,3`, `hFacInf`) | partial | `stepper.nonlin_free_surf`, `stepper.hfac_inf` (`physics.nonlin_free_surf` mirror) | Needs `exact_conserv`, hydrostatic; refused with a Flather boundary, on the cube, with wet columns shallower than the top layer, with `linFSConserveTr`, with `kpp_convective_implicit`. Level >= 2 needs the momentum form named. |
+| Nonlinear free surface (`nonlinFreeSurf=1,2,3`, `hFacInf`) | partial | `stepper.nonlin_free_surf`, `stepper.hfac_inf` (`physics.nonlin_free_surf` mirror) | Needs `exact_conserv`, hydrostatic; refused with a Flather boundary, on the cube, with wet columns shallower than the top layer, and with `linFSConserveTr`. Level >= 2 needs the momentum form named. |
 | `nonlinFreeSurf=4` | partial | `stepper.nonlin_free_surf: 4` | Only with `select_rStar=2` (see the z* row). |
 | `hFacSup` | no |  | Inert with `select_rStar=0`, as in MITgcm; the r* path has no `hFacSup` clamp. |
 | Real freshwater flux (`useRealFreshWaterFlux`) | partial | `stepper.use_real_freshwater_flux` | Refused on the cube, with r*, with `pLoadFile`; with NH only when EmPmR is zero and not differentiated. |

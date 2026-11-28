@@ -22,7 +22,6 @@ using the same MITgcm conventions.
 """
 from __future__ import annotations
 
-import dataclasses
 import math
 import os
 from dataclasses import dataclass, field
@@ -36,12 +35,6 @@ from locomgcm.dynamics.kpp import (
     jmd95z_layer_pressure,
     kpp_calc_diffusivities,
     kpp_wscale_tables,
-)
-from locomgcm.dynamics.kpp_convective_implicit import (
-    ConvectiveImplicitConfig,
-    KppMixingInputs,
-    inactive,
-    mix_convective_implicit,
 )
 from locomgcm.dynamics.planetary_coriolis import spherical_coriolis
 from locomgcm.operators.fluxes.tracer_flux import TracerFluxScheme
@@ -387,10 +380,6 @@ class KppFields:
     surf_forc_s: torch.Tensor  # (..., ny, nx)      sfS, surface salt apply + ghat nonlocal flux
     surf_forc_t_nl: torch.Tensor  # (..., ny, nx)   COMPLETE sfT for the T ghat nonlocal flux
     #                                                 = sfT - Qsw*recip_Cp*recip_rhoConst*KPPfrac
-    # Diagnosis-time RI_IWMIX/BLMIX operands. Present exactly when the
-    # diagnosis was asked for the implicit convective scheme; mix_kpp_tracers
-    # raises when that scheme is selected and they are missing.
-    mixing_inputs: "KppMixingInputs | None" = None
 
 
 @dataclass(frozen=True)
@@ -413,8 +402,6 @@ class RegionalKppInputs:
     background_diffusivity_s: float | torch.Tensor
     background_diffusivity_t: float | torch.Tensor
     params: dict
-    # None selects the lagged scheme; a config selects convective_be_column_v1.
-    convective_implicit: ConvectiveImplicitConfig | None
 
     def diagnose(self, temp, salt, u, v, *, grid) -> KppFields:
         return regional_kpp_fields(
@@ -425,7 +412,6 @@ class RegionalKppInputs:
             background_diffusivity_s=self.background_diffusivity_s,
             background_diffusivity_t=self.background_diffusivity_t,
             eos_pressure_pa=self.eos_pressure_pa, params=self.params,
-            convective_implicit=self.convective_implicit,
         )
 
 
@@ -499,7 +485,6 @@ def mix_kpp_tracers(
     multi_dim_advection: bool,
     nonlocal_tracer_names: tuple[str, ...],
     continuity_tracer_names: tuple[str, ...],
-    convective_implicit: ConvectiveImplicitConfig | None,
     recip_hfac: torch.Tensor | None,
     mask_c_current: torch.Tensor | None,
     recip_hfac_current_c: torch.Tensor | None,
@@ -521,36 +506,11 @@ def mix_kpp_tracers(
     Only named tracers still need their nonlocal source here. Sources already
     included in the outer AB bucket must not be added a second time.
     continuity_tracer_names explicitly selects the Euler fields still needing C.
-    convective_implicit None is the lagged scheme. A config solves the
-    convective coefficients together with T/S (convective_be_column_v1,
-    :mod:`locomgcm.dynamics.kpp_convective_implicit`), started from the
-    lagged solution; it needs the diagnosis-time operands in ``kpp``.
     ``recip_hfac`` explicitly selects the thickness used by the nonlocal
     source and column matrix (``thermodynamics.F:236-244``).
     ``recip_hfac_continuity`` selects the post-AB Euler continuity volume;
     ``recip_hfac_current_c`` retains the current column transport metric.
     """
-    if convective_implicit is not None:
-        if kpp.mixing_inputs is None or kpp.mixing_inputs.config != convective_implicit:
-            raise ValueError("kpp_convective_implicit needs a KPP diagnosis made for the same scheme")
-        if nonlocal_temp_diffusivity is not kpp.diff_kzt or nonlocal_salt_diffusivity is not kpp.diff_kzs:
-            raise ValueError(
-                "kpp_convective_implicit takes the nonlocal flux with KPPdiffKzT/S only "
-                "(kpp_ghat_use_total_diffus with GM/Redi)")
-        if not (temperature_implicit_advection and salinity_implicit_advection
-                and temperature_advection_scheme is salinity_advection_scheme is TracerFluxScheme.UPWIND
-                and tracer_w is not None
-                and set(nonlocal_tracer_names) == {"temp", "salt"}
-                and set(continuity_tracer_names) == {"temp", "salt"}):
-            raise ValueError(
-                "kpp_convective_implicit requires implicit vertical advection of T and S "
-                "with scheme 1 and the nonlocal and continuity terms of both outside AB")
-        return _mix_kpp_tracers_convective(
-            temp_rhs, salt_rhs, temp_reference=temp_reference, salt_reference=salt_reference,
-            kpp=kpp, layer_thickness=layer_thickness, grid=grid, dt=dt, tracer_w=tracer_w,
-            nonlocal_tracer_names=nonlocal_tracer_names,
-            continuity_tracer_names=continuity_tracer_names,
-        )
     from locomgcm.dynamics.implicit_vertical_advection import (
         add_tracer_vertical_continuity,
         solve_tracer_implicit_vertical_advection,
@@ -608,59 +568,6 @@ def mix_kpp_tracers(
             salt_rhs, grid, dt, salt_diffusivity, recip_hFac=recip_hfac,
         )
     return temp, salt
-
-
-@torch.compiler.disable
-def _mix_kpp_tracers_convective(temp_rhs, salt_rhs, *, temp_reference, salt_reference, kpp,
-                                layer_thickness, grid, dt, tracer_w, nonlocal_tracer_names,
-                                continuity_tracer_names):
-    """convective_be_column_v1 station of :func:`mix_kpp_tracers`.
-
-    Outside Dynamo: the Newton iteration count, the line search and the CPU
-    scalar recovery depend on the data. A compiled step breaks its graph here;
-    every state-dependent argument and the result keep their autograd graph.
-    """
-    from ._kpp_convective_replay import replay_active
-    from .implicit_vertical_advection import tracer_hfac_factors
-
-    # A reverse segment owns the accepted physical root. Its lagged solve
-    # would only provide an unused Newton initial guess.
-    initial = None
-    if not replay_active(enabled=kpp.mixing_inputs.config.checkpoint_reuse):
-        lagged = inactive(dict(
-            temp_reference=temp_reference, salt_reference=salt_reference,
-            temp_limiter_reference=temp_reference, salt_limiter_reference=salt_reference,
-            kpp=dataclasses.replace(kpp, mixing_inputs=None),
-            temp_diffusivity=kpp.diff_kzt, salt_diffusivity=kpp.diff_kzs,
-            nonlocal_temp_diffusivity=kpp.diff_kzt, nonlocal_salt_diffusivity=kpp.diff_kzs,
-            layer_thickness=layer_thickness, tracer_w=tracer_w))
-        with torch.no_grad():
-            temp_rhs_detached = temp_rhs.detach()
-            salt_rhs_detached = salt_rhs.detach()
-            mask_c_current, recip_hfac_current = tracer_hfac_factors(
-                field=temp_rhs_detached,
-                hfac_c=grid.masks.hFacC.to(dtype=temp_rhs_detached.dtype, device=temp_rhs_detached.device),
-            )
-            initial = mix_kpp_tracers(
-                temp_rhs_detached, salt_rhs_detached, **lagged, grid=grid, dt=dt,
-                temperature_implicit_advection=True, salinity_implicit_advection=True,
-                temperature_advection_scheme=TracerFluxScheme.UPWIND,
-                salinity_advection_scheme=TracerFluxScheme.UPWIND,
-                multi_dim_advection=False,
-                nonlocal_tracer_names=nonlocal_tracer_names,
-                continuity_tracer_names=continuity_tracer_names,
-                convective_implicit=None,
-                recip_hfac=recip_hfac_current,
-                mask_c_current=mask_c_current,
-                recip_hfac_current_c=recip_hfac_current,
-                recip_hfac_continuity=recip_hfac_current,
-            )
-    return mix_convective_implicit(
-        temp_rhs, salt_rhs, initial=initial,
-        temp_reference=temp_reference, salt_reference=salt_reference,
-        kpp_fields=kpp, inputs=kpp.mixing_inputs, layer_thickness=layer_thickness,
-        grid=grid, dt=dt, tracer_w=tracer_w, halo=_OL,
-    )
 
 
 def subcycle_kpp_tracers(
@@ -725,7 +632,6 @@ def subcycle_kpp_tracers(
             multi_dim_advection=multi_dim_advection,
             nonlocal_tracer_names=("temp", "salt"),
             continuity_tracer_names=continuity_tracer_names,
-            convective_implicit=None,
             recip_hfac=recip_hfac,
             mask_c_current=mask_c_current,
             recip_hfac_current_c=recip_hfac_current_c,
@@ -1002,7 +908,6 @@ def regional_kpp_fields(
     background_diffusivity_t: float,
     eos_pressure_pa: torch.Tensor | None,
     params: dict = KPP_STOCK_PARAMS,
-    convective_implicit: ConvectiveImplicitConfig | None,
 ) -> KppFields:
     """KPP diffusivities for a regional structured-grid step (single patch, no seam).
 
@@ -1014,22 +919,12 @@ def regional_kpp_fields(
     the MIT-convention slab, including the real east/north outer faces.  The
     background tracer diffusivities are complete case values, not additions
     performed by the downstream solver.  Returns batched :class:`KppFields`.
-    A ``convective_implicit`` config keeps the RI_IWMIX/BLMIX operands of the
-    reference driver in ``KppFields.mixing_inputs`` (batch 1, no fused KPP).
     """
     params = resolve_kpp_runtime_parameters(params)
-    keep_inputs = convective_implicit is not None
-    if keep_inputs and temp.shape[0] != 1:
-        raise ValueError("kpp_convective_implicit supports a single regional batch")
-    if keep_inputs and params["use_double_diff"]:
-        raise ValueError(
-            "kpp_convective_implicit does not solve the KPP double-diffusion term "
-            "(kpp_use_double_diff)")
-    captured = None
     ext = HaloExtentV1.uniform(_OL)
     u_ext = HaloExtentV1(_OL, _OL - 1, _OL, _OL)
     v_ext = HaloExtentV1(_OL, _OL, _OL, _OL - 1)
-    B, nz = temp.shape[0], temp.shape[-3]
+    B = temp.shape[0]
     ny, nx = temp.shape[-2], temp.shape[-1]
 
     def sc(fld, *, constant=False):  # scalar/compact halo, REPLICATE (regional convention, tracers.py:511)
@@ -1101,9 +996,9 @@ def regional_kpp_fields(
         if not in_accelerated_dispatch():
             with consumer_snapshot():
                 if requested(("kpp_fused_cuda",)):
-                    if keep_inputs or params.get("surface_buoyancy", "statekpp") != "statekpp":
+                    if params.get("surface_buoyancy", "statekpp") != "statekpp":
                         raise ValueError(
-                            "kpp_fused_cuda implements neither kpp_convective_implicit nor "
+                            "kpp_fused_cuda does not implement "
                             "kpp_surface_buoyancy='divided_difference'; set LOCOMGCM_KPP_FUSED_CUDA=0")
                     from locomgcm.dynamics._kpp_fused import dispatcher
 
@@ -1126,15 +1021,7 @@ def regional_kpp_fields(
                         eos=eos,
                         params=params,
                     )
-        if fused is None and keep_inputs:
-            viscAz, diffKzS, diffKzT, gh, hb, captured = kpp_calc_diffusivities(
-                th, sa, uu, vv, sft, sfs, sfu, sfv, fc_h, mk_h, km_h,
-                static.layer_thickness, static.zgrid, static.hwide, static.wmt, static.wst,
-                qsw=qsw_b, eos_pressure_pa=pressure_b, bg_KzS=bg_kzs, bg_KzT=bg_kzt,
-                layer1_thickness=getattr(static, "layer1_thickness", None),
-                return_mixing_inputs=True, **params,
-            )
-        elif fused is None:
+        if fused is None:
             viscAz, diffKzS, diffKzT, gh, hb = kpp_calc_diffusivities(
                 th, sa, uu, vv, sft, sfs, sfu, sfv, fc_h, mk_h, km_h,
                 static.layer_thickness, static.zgrid, static.hwide, static.wmt, static.wst,
@@ -1160,19 +1047,7 @@ def regional_kpp_fields(
     st = lambda key: torch.stack(acc[key], 0)
     hbl_b = st("hbl")
     surf_forc_t_nl = _nonlocal_temp_forcing(surf_forc_t, surf_qsw, hbl_b, params)
-    mixing_inputs = None
-    if keep_inputs:
-        pressure = eos_pressure_pa
-        if pressure is None:
-            pressure = jmd95z_layer_pressure(
-                static.layer_thickness, gravity=float(params["gravity"]),
-                rho_const=float(params["rho_const"]),
-            ).reshape(1, nz, 1, 1).expand(1, nz, ny, nx)
-        mixing_inputs = KppMixingInputs(
-            temp=temp, salt=salt, pressure=pressure, params=params,
-            config=convective_implicit, **captured,
-        )
     return KppFields(kappa_ru=st("ru"), kappa_rv=st("rv"), diff_kzt=st("kzt"),
                      diff_kzs=st("kzs"), ghat=st("ghat"), hbl=hbl_b, visc_cell=st("vc"),
                      surf_forc_t=surf_forc_t, surf_forc_s=surf_forc_s,
-                     surf_forc_t_nl=surf_forc_t_nl, mixing_inputs=mixing_inputs)
+                     surf_forc_t_nl=surf_forc_t_nl)

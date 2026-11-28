@@ -237,7 +237,7 @@ def prepare_regional_kpp_inputs(
     *, static, rho_const, surf_forc_t, surf_forc_s, surf_forc_u,
     surf_forc_v, surf_qsw, eos_pressure_pa_at_call, eos_module,
     run_values: KppRunValues, forcing_penetrating_sw,
-    tracer_vertical_diffusivity, convective_implicit,
+    tracer_vertical_diffusivity,
 ) -> RegionalKppInputs:
     """Assemble frozen KPP inputs with pressure sampled at the caller's station."""
     from locomgcm.dynamics.kpp_mixing import RegionalKppInputs
@@ -254,7 +254,6 @@ def prepare_regional_kpp_inputs(
         background_diffusivity_s=float(tracer_vertical_diffusivity),
         background_diffusivity_t=float(tracer_vertical_diffusivity),
         eos_pressure_pa=eos_pressure_pa_at_call, params=params,
-        convective_implicit=convective_implicit,
     )
 
 

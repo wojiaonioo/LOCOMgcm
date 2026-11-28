@@ -1,8 +1,7 @@
 """Check and normalize implicit free-surface configuration and composition values.
 
 Composition, runtime, execution-protocol, solver and option-pair checks only
-inspect inputs and raise. Configuration validation returns the normalized
-convective configuration; resolve_tracer_ab_flags normalizes tracer AB flags.
+inspect inputs and raise. resolve_tracer_ab_flags normalizes tracer AB flags.
 resolve_vector_invariant_momentum returns the selected momentum form.
 resolve_volume_freshwater writes _volume_freshwater on forcing modules.
 Assembly validation logs KPP sign-zero settings to the stepper logger.
@@ -22,7 +21,6 @@ import torch
 from locomgcm.dynamics import AssemblyPolicy
 from locomgcm.dynamics.kpp import KPP_SURFACE_BUOYANCY_FORMS, check_kpp_sign_zero
 from locomgcm.dynamics.implicit_vertical_advection import IMPLICIT_VERTICAL_TRACER_SCHEMES
-from locomgcm.dynamics.kpp_convective_implicit import ConvectiveImplicitConfig
 from locomgcm.operators.fluxes.tracer_flux import (
     TRACER_SCHEME_BY_NAME,
     TracerFluxScheme,
@@ -198,22 +196,6 @@ def validate_negative_salinity_check(stepper: Any, modules: Sequence[Any], *, fa
         )
 
 
-def validate_tracer_advection_scheme(
-    *, tracer, horizontal, vertical, implicit, convective_implicit,
-) -> None:
-    """Check the scheme pairs that cross modules: the implicit column and KPP's convective column.
-
-    Each scheme alone is checked where it is declared (``HorizontalTracerAdvection``
-    against ``HORIZONTAL_TRACER_SCHEMES`` and ``VERTICAL_TRACER_SCHEMES``).
-    """
-    vertical_scheme = _tracer_scheme(vertical)
-    if implicit and convective_implicit and vertical_scheme is not TracerFluxScheme.UPWIND:
-        raise ValueError(
-            "KPP convective implicit requires vertical advection scheme upwind; "
-            f"its Newton column does not implement {vertical!r} ({tracer})"
-        )
-
-
 def validate_tracer_ab_scheme(*, tracer: str, horizontal: Any, tendency_ab: bool) -> None:
     """Refuse a tracer whose tendency AB disagrees with its horizontal scheme's declaration.
 
@@ -278,18 +260,6 @@ def validate_implicit_vertical_advection_composition(
             salinity_vertical_advection_scheme,
         ),
     }
-    carried = {"temp", "salt"} if dynamics_modules is None else {
-        tracer for module in dynamics_modules
-        if _composition_module_name(module) == "horizontal_tracer_advection"
-        for tracer in _composition_tracer_names(module, "horizontal_tracer_advection")
-    }
-    for tracer, (horizontal, vertical) in schemes.items():
-        if {"temperature": "temp", "salinity": "salt"}[tracer] not in carried:
-            continue
-        validate_tracer_advection_scheme(
-            tracer=tracer, horizontal=horizontal, vertical=vertical,
-            implicit=flags[tracer], convective_implicit=False,
-        )
     if not any(flags.values()):
         return
 
@@ -863,8 +833,7 @@ def validate_implicit_free_surface_configuration(
     kpp_sign_zero: str,
     kpp_surface_buoyancy: str,
     kpp_dbloc_form: str,
-    kpp_convective_implicit: Any,
-) -> ConvectiveImplicitConfig | None:
+) -> None:
     if type(kpp_tracer_substeps) is not int or kpp_tracer_substeps < 1:
         raise ValueError("kpp_tracer_substeps must be a positive integer")
     if kpp_tracer_substeps > 1 and not (kpp_enabled and stagger_tracer_stepping):
@@ -915,7 +884,6 @@ def validate_implicit_free_surface_configuration(
     from locomgcm.dynamics.kpp import check_kpp_dbloc_form
 
     check_kpp_dbloc_form(kpp_dbloc_form)
-    return ConvectiveImplicitConfig.from_mapping(kpp_convective_implicit)
 
 
 def validate_r_star_configuration(
@@ -970,13 +938,7 @@ def validate_r_star_configuration(
 
 def validate_implicit_free_surface_assembly(
     *,
-    convective: ConvectiveImplicitConfig | None,
     kpp_enabled: bool,
-    stagger_tracer_stepping: bool,
-    kpp_tracer_substeps: int,
-    temperature_implicit_vertical_advection: bool,
-    salinity_implicit_vertical_advection: bool,
-    kpp_dbloc_form: str,
     nonlin_free_surf: int,
     kpp_coriolis_profile_c: Any,
     kpp_sign_zero: str,
@@ -989,27 +951,6 @@ def validate_implicit_free_surface_assembly(
             f"nonlin_free_surf={nonlin_free_surf!r} is not one of the implemented levels "
             f"{NONLIN_FREE_SURF_LEVELS} (select_r_star=0) or "
             f"{R_STAR_NONLIN_FREE_SURF_LEVEL} (select_r_star=2)"
-        )
-    if convective is not None and not (
-        kpp_enabled
-        and stagger_tracer_stepping
-        and kpp_tracer_substeps == 1
-        and temperature_implicit_vertical_advection
-        and salinity_implicit_vertical_advection
-    ):
-        raise ValueError(
-            "kpp_convective_implicit requires KPP, staggered tracer stepping, one KPP "
-            "tracer substep and implicit vertical advection of temperature and salinity"
-        )
-    if convective is not None and kpp_dbloc_form != "divided_difference":
-        raise ValueError(
-            "kpp_convective_implicit requires kpp_dbloc_form='divided_difference' "
-            "(its column coefficients use the JMD95 divided difference)"
-        )
-    if convective is not None and nonlin_free_surf != 0:
-        raise ValueError(
-            "kpp_convective_implicit with nonlin_free_surf!=0 is unsupported: "
-            "the convective column solve does not take recip_hFacNew"
         )
     if isinstance(kpp_coriolis_profile_c, str):
         raise ValueError(

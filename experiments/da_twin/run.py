@@ -51,13 +51,12 @@ def selected(args):
 
 
 def open_window(row, args, momentum=None):
-    return Window(row, args.bstd, kpp=args.kpp, segment=args.segment,
+    return Window(row, args.bstd, segment=args.segment,
                   device_bytes=int(args.device_gib * 1024**3), compiled=not args.eager,
                   momentum=momentum)
 
 
 def minimize(w, args):
-    from locomgcm.dynamics.kpp_convective_implicit import RootFailure
     out = args.out / w.name
     out.mkdir(parents=True, exist_ok=True)
     evaluations, accepted, failures = [], [], []
@@ -65,7 +64,7 @@ def minimize(w, args):
     def fun(x):
         try:
             value, gradient, row = w.prob.value_grad(x, 432)
-        except (RootFailure, FloatingPointError) as e:
+        except FloatingPointError as e:
             if not evaluations:
                 raise
             raise TrialFailure(dict(error=type(e).__name__, message=str(e),
@@ -92,7 +91,7 @@ def minimize(w, args):
     fields, _ = w.prob.fields(v)
     np.savez(out / 'analysis_fields.npz', **{n: f.numpy() for n, f in fields.items()})
     write_json(out / 'result.json', dict(termination=message, evaluations=evaluations,
-        accepted=accepted, failures=failures, kpp=args.kpp, smoke=args.smoke))
+        accepted=accepted, failures=failures, smoke=args.smoke))
 
 
 def static_grid(w):
@@ -135,10 +134,8 @@ def train(args):
         if args.smoke:
             args.stages, args.batch, args.min_success = '432:1', 1, 1
         args.trial_errors = (FloatingPointError,)
-        from locomgcm.dynamics.kpp_convective_implicit import RootFailure
-        args.trial_errors = (FloatingPointError, RootFailure)
         eng = training.Engine(args, wins, train_names, val_names, [], grid, static,
-            training.Tree({'kpp': args.kpp, 'windows': rows, 'case_text': Path(rows[0]['case']).read_text()}),
+            training.Tree({'windows': rows, 'case_text': Path(rows[0]['case']).read_text()}),
             training.Dist(), 'cuda', lambda tag, rec: print(tag, json.dumps(rec, default=str), flush=True))
         eng.backgrounds()
         net = n2.AnalysisNet2().cuda()
@@ -147,7 +144,7 @@ def train(args):
             training.atomic_save(dict(net=net.state_dict(), args={'no_uv': True, 'output_space': 'v'},
                 steps=432, g0_scale=eng.stage_info['g0_scale']), args.out / 'smoke.pt')
         write_json(args.out / 'training.json', dict(status=status, curriculum=cur,
-            parameters=n2.parameter_count(net), phase=args.phase, kpp=args.kpp))
+            parameters=n2.parameter_count(net), phase=args.phase))
     finally:
         for w in wins.values():
             w.prob.close()
@@ -165,7 +162,7 @@ def analyze(w, args, saved, norm, net):
     fields, _ = w.prob.fields(v)
     np.savez(out / 'analysis_fields.npz', **{n: f.numpy() for n, f in fields.items()})
     value, _ = w.prob.value(v, 432)
-    write_json(out / 'result.json', dict(J=value, J_per_obs=value / w.m, J0=w.j0, kpp=args.kpp))
+    write_json(out / 'result.json', dict(J=value, J_per_obs=value / w.m, J0=w.j0))
 
 
 def forecast_scores(w, fields, truth, weights, evalobs):
@@ -231,7 +228,6 @@ def parser():
         q.add_argument('--out', type=Path, required=True)
         q.add_argument('--select', nargs='+')
         q.add_argument('--split', nargs='+', choices=['train', 'val', 'report', 'test'])
-        q.add_argument('--kpp', choices=['convective', 'lagged'], default='convective')
         q.add_argument('--segment', type=int, default=1)
         q.add_argument('--device-gib', type=float, default=32)
         q.add_argument('--eager', action='store_true')

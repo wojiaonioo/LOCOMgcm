@@ -21,7 +21,6 @@ def main(argv=None):
     p.add_argument('--device-gib', type=float, default=32)
     p.add_argument('--segment', type=int, default=1)
     args = p.parse_args(argv)
-    args.kpp = 'lagged'
     row, = [r for r in specs(args.windows) if r['name'] == args.select]
     torch.set_num_threads(4)
     torch.backends.cuda.matmul.allow_tf32 = False

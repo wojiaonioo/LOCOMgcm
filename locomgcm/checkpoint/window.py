@@ -325,7 +325,6 @@ class WindowOwner:
             segment.boundary = None
             segment.adjoint = None
             segment.solutions.clear()
-            segment.kpp_roots.clear()
             segment._retained_order.clear()
         self._anchor_output = None
         self._segments.clear()
@@ -766,7 +765,6 @@ class _Segment:
         self.adjoint = None
         # Accepted roots travel with the segment head, then enter recompute.
         self.solutions = []
-        self.kpp_roots = []
         self._retained_order = []
 
     def seeds(self, observation):
@@ -793,10 +791,9 @@ class _Segment:
     def __call__(self, *parameters):
         from .recompute import _bind
         from locomgcm.solvers.cg2d import segment_solutions
-        from locomgcm.dynamics._kpp_convective_replay import segment_roots
         owner = self.owner
         model = owner.model
-        groups = (self.solutions, self.kpp_roots)
+        groups = (self.solutions,)
         if self.reverse:
             tensors = owner.scheduler.take(self.slot)
             # Kept roots follow the head, in the forward's per-step order.
@@ -815,8 +812,7 @@ class _Segment:
             owner.scheduler.save(self.slot, tensors)
             del values, head
         with segment_workspace(model), torch.enable_grad(), contextlib.ExitStack() as bound, \
-                segment_solutions(self.solutions, replay=self.reverse), \
-                segment_roots(self.kpp_roots, replay=self.reverse):
+                segment_solutions(self.solutions, replay=self.reverse):
             # A leaf's AccumulateGrad owns its data until backward completes.
             # Receive head cotangents through a handle instead: neither this
             # executor nor that autograd edge retains a consumed head tensor.

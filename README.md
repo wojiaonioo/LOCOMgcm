@@ -257,7 +257,6 @@ Fortran compiler, NetCDF, Java and Tapenade.
 | [`docs/SUPPORT.md`](docs/SUPPORT.md) | The cases compared with MITgcm and the MITgcm options that LOCOMgcm has and lacks |
 | [`docs/NUMERICS.md`](docs/NUMERICS.md) | Index, sign and mask conventions and their relation to MITgcm |
 | [`docs/VALIDATION.md`](docs/VALIDATION.md) | How to compare LOCOMgcm with MITgcm and how to judge a difference |
-| [`docs/KPP_CONVECTIVE_IMPLICIT.md`](docs/KPP_CONVECTIVE_IMPLICIT.md) | The optional implicit convective KPP scheme |
 | [`docs/COMPILE_COMPAT.md`](docs/COMPILE_COMPAT.md) | The fixes installed for `torch.compile` with PyTorch 2.9 and Triton 3.5 |
 
 ## License and citation

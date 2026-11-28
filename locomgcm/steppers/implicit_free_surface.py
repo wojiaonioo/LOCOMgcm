@@ -430,7 +430,7 @@ class ImplicitFreeSurfaceStepper(TimeStepper):
     # MITgcm STATEKPP does; "divided_difference" (JMD95 only) is the polynomial
     # divided difference, which keeps near-neutral derivatives
     # accurate.  The KPP CUDA STATEKPP and fused kernels serve "divided_difference"
-    # only and decline the MITgcm form; kpp_convective_implicit requires it.
+    # only and decline the MITgcm form.
     kpp_dbloc_form: str = "statekpp"
     # MITgcm KPPuseDoubleDiff (data.kpp, default .FALSE.): salt-fingering and
     # diffusive-convection diffusivities join KPP's background (kpp.kpp_double_diffusion).
@@ -438,15 +438,6 @@ class ImplicitFreeSurfaceStepper(TimeStepper):
     # MITgcm KPP_ghatUseTotalDiffus (data.kpp, default .FALSE.): with GM/Redi on,
     # KPP's nonlocal flux multiplies KPPdiffKz + Kwz (_kpp_nonlocal_diffusivities).
     kpp_ghat_use_total_diffus: bool = False
-    # None: KPP coefficients lagged at the step start (MITgcm). A mapping
-    # selects convective_be_column_v1, the convective coefficients solved
-    # implicitly with the mixed T/S (locomgcm/dynamics/kpp_convective_implicit.py):
-    # {root_policy: newton | newton_rank_one_brent_v1 | newton_factor_box_v1
-    #  | newton_factor_homotopy_v1,
-    #  root_tolerance, polish_steps,
-    #  residual_scale: {temp: [nz], salt: [nz]}, execution: eager | compiled}.
-    # Resolved to a ConvectiveImplicitConfig in __post_init__.
-    kpp_convective_implicit: Any = None
     # Cube tracer DST3-FL (MITgcm scheme 33, horizontal + vertical R-pass).  Read
     # via a dual-read at the cube tracer call site (cache knob
     # ``_cube_tracer_dst3fl`` / this field / env ``LOCOMGCM_CUBE_TRACER_DST3FL``).
@@ -542,7 +533,7 @@ class ImplicitFreeSurfaceStepper(TimeStepper):
         # MIT SET_PARMS resolves this dependency before timestep placement.
         if not self.momentum_pressure_forcing:
             object.__setattr__(self, "implicit_int_grav_wave", False)
-        convective = admission.validate_implicit_free_surface_configuration(
+        admission.validate_implicit_free_surface_configuration(
             kpp_tracer_substeps=self.kpp_tracer_substeps,
             kpp_enabled=self.kpp_enabled,
             stagger_tracer_stepping=self.stagger_tracer_stepping,
@@ -561,17 +552,9 @@ class ImplicitFreeSurfaceStepper(TimeStepper):
             kpp_sign_zero=self.kpp_sign_zero,
             kpp_surface_buoyancy=self.kpp_surface_buoyancy,
             kpp_dbloc_form=self.kpp_dbloc_form,
-            kpp_convective_implicit=self.kpp_convective_implicit,
         )
-        object.__setattr__(self, "kpp_convective_implicit", convective)
         admission.validate_implicit_free_surface_assembly(
-            convective=convective,
             kpp_enabled=self.kpp_enabled,
-            stagger_tracer_stepping=self.stagger_tracer_stepping,
-            kpp_tracer_substeps=self.kpp_tracer_substeps,
-            temperature_implicit_vertical_advection=self.temperature_implicit_vertical_advection,
-            salinity_implicit_vertical_advection=self.salinity_implicit_vertical_advection,
-            kpp_dbloc_form=self.kpp_dbloc_form,
             nonlin_free_surf=self.nonlin_free_surf,
             kpp_coriolis_profile_c=self.kpp_coriolis_profile_c,
             kpp_sign_zero=self.kpp_sign_zero,
@@ -1253,7 +1236,6 @@ class ImplicitFreeSurfaceStepper(TimeStepper):
             eos_module=eos_module, run_values=self._kpp_run_values,
             forcing_penetrating_sw=forcing.penetrating_sw,
             tracer_vertical_diffusivity=self.tracer_vertical_diffusivity_kr,
-            convective_implicit=self.kpp_convective_implicit,
         )
 
     def _eos_pressure_at_call(self, eos_module, grid, *, target):
@@ -3593,12 +3575,7 @@ class ImplicitFreeSurfaceStepper(TimeStepper):
         tracer_recip_current = None
         if _kpp_t_enabled:
             _kpp_layer_thickness = kpp.inputs.static.layer_thickness
-            _kpp_convective_implicit = self.kpp_convective_implicit
-            if recip_hfac_new is not None and _kpp_convective_implicit is not None:
-                raise ValueError(
-                    "recip_hfac (recip_hFacNew of a nonlinear free surface) reaches the diffusion "
-                    "solve only; the implicit vertical advection and convective solves do not take it")
-            if _kpp_convective_implicit is None and recip_hfac_current is None:
+            if recip_hfac_current is None:
                 tracer_mask_current, tracer_recip_current = tracer_hfac_factors(
                     field=temp_new, hfac_c=cast_tensor(grid.masks.hFacC, dtype=temp_new.dtype, device=temp_new.device),
                 )
@@ -3608,7 +3585,6 @@ class ImplicitFreeSurfaceStepper(TimeStepper):
                 tracer_kr=mixing.tracer_kr, contributions=mixing.contributions + gm_contributions)
         else:
             _kpp_layer_thickness = None
-            _kpp_convective_implicit = None
             tracer_column_diffusion = self.implicit_tracer_diffusion
             tracer_kappa_rt, tracer_kappa_rs = 0.0, 0.0
             if tracer_column_diffusion:
@@ -3633,7 +3609,7 @@ class ImplicitFreeSurfaceStepper(TimeStepper):
             salinity_advection_scheme=salinity_advection_scheme,
             multi_dim_advection=multi_dim_advection,
             nonlocal_tracer_names=kpp_post_names,
-            continuity_names=(), convective_implicit=_kpp_convective_implicit,
+            continuity_names=(),
             implicit_tracer_diffusion=tracer_column_diffusion,
             kappa_rt=tracer_kappa_rt, kappa_rs=tracer_kappa_rs,
             nonlocal_temp_diffusivity=nonlocal_kz[0], nonlocal_salt_diffusivity=nonlocal_kz[1],
@@ -4366,17 +4342,14 @@ class ImplicitFreeSurfaceStepper(TimeStepper):
         tracer_recip_current = None
         if _kpp_ts_enabled:
             _kpp_layer_thickness = kpp.inputs.static.layer_thickness
-            _kpp_convective_implicit = self.kpp_convective_implicit
             tracer_column_diffusion = False
             tracer_kappa_rt, tracer_kappa_rs = columns.assemble_tracer_diffusivity(
                 tracer_kr=mixing.tracer_kr, contributions=mixing.contributions + gm_contributions)
-            if _kpp_convective_implicit is None:
-                tracer_mask_current, tracer_recip_current = tracer_hfac_factors(
-                    field=temp_new, hfac_c=cast_tensor(grid.masks.hFacC, dtype=temp_new.dtype, device=temp_new.device),
-                )
+            tracer_mask_current, tracer_recip_current = tracer_hfac_factors(
+                field=temp_new, hfac_c=cast_tensor(grid.masks.hFacC, dtype=temp_new.dtype, device=temp_new.device),
+            )
         else:
             _kpp_layer_thickness = None
-            _kpp_convective_implicit = None
             tracer_column_diffusion = self.implicit_tracer_diffusion
             tracer_kappa_rt, tracer_kappa_rs = 0.0, 0.0
             if tracer_column_diffusion:
@@ -4396,7 +4369,7 @@ class ImplicitFreeSurfaceStepper(TimeStepper):
         recip_hfac_tracer_matrix = (
             recip_hfac_surf_future if tracer_nlfs else tracer_recip_current
         )
-        return (_kpp_ts_enabled, _kpp_layer_thickness, _kpp_convective_implicit,
+        return (_kpp_ts_enabled, _kpp_layer_thickness,
                 tracer_column_diffusion, tracer_kappa_rt, tracer_kappa_rs,
                 tracer_mask_current, tracer_recip_current, recip_hfac_tracer_matrix)
 
@@ -4682,7 +4655,7 @@ class ImplicitFreeSurfaceStepper(TimeStepper):
                     recip_hfac_current_c=tracer_recip_current, recip_hfac=recip_hfac_tracer_matrix,
                 )
             else:
-                (_kpp_ts_enabled, _kpp_layer_thickness, _kpp_convective_implicit,
+                (_kpp_ts_enabled, _kpp_layer_thickness,
                  tracer_column_diffusion, tracer_kappa_rt, tracer_kappa_rs,
                  tracer_mask_current, tracer_recip_current,
                  recip_hfac_tracer_matrix) = self._prepare_tracer_column_inputs(
@@ -4691,7 +4664,6 @@ class ImplicitFreeSurfaceStepper(TimeStepper):
                 )
                 nonlocal_kz = (self._kpp_nonlocal_diffusivities(kpp_fields, gm_contributions)
                                if _kpp_ts_enabled else (None, None))
-                # Keep the convective column disable boundary at this call site.
                 temp_new, salt_new = ifs_tracer.mix_and_solve_columns(
                     temp_new=temp_new, salt_new=salt_new, temp_reference=tracer_temp_n, salt_reference=tracer_salt_n,
                     kpp_enabled=_kpp_ts_enabled, kpp=kpp_fields, layer_thickness=_kpp_layer_thickness, grid=grid, dt_tracer=dt_tracer,
@@ -4699,7 +4671,7 @@ class ImplicitFreeSurfaceStepper(TimeStepper):
                     salinity_implicit_advection="salt" in implicit_tracer_names,
                     temperature_advection_scheme=temperature_advection_scheme, salinity_advection_scheme=salinity_advection_scheme,
                     multi_dim_advection=multi_dim_advection, nonlocal_tracer_names=kpp_post_names,
-                    continuity_names=continuity_post_names, convective_implicit=_kpp_convective_implicit,
+                    continuity_names=continuity_post_names,
                     implicit_tracer_diffusion=tracer_column_diffusion, kappa_rt=tracer_kappa_rt, kappa_rs=tracer_kappa_rs,
                     nonlocal_temp_diffusivity=nonlocal_kz[0], nonlocal_salt_diffusivity=nonlocal_kz[1],
                     recip_hfac=recip_hfac_tracer_matrix, mask_c_current=tracer_mask_current, recip_hfac_current_c=tracer_recip_current,

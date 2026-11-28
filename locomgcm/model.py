@@ -75,7 +75,6 @@ from locomgcm.steppers.ifs.admission import (
     validate_negative_salinity_check,
     validate_rotation_period,
     validate_tracer_ab_scheme,
-    validate_tracer_advection_scheme,
 )
 from locomgcm.step import (
     EMPTY_MAPPING,
@@ -667,10 +666,8 @@ class TorchRegionalOceanModel:
     def _validate_tracer_vertical_consumers(self) -> None:
         """Reject multiple R-advection consumers for a declared tracer."""
         implicit_names = set()
-        convective_implicit = False
         tendency_ab: dict[str, bool] = {}
         if isinstance(self.stepper, ImplicitFreeSurfaceStepper):
-            convective_implicit = self.stepper.kpp_convective_implicit is not None
             tendency_ab = {
                 "temp": self.stepper.ab2_on_temperature_tendency,
                 "salt": self.stepper.ab2_on_salinity_tendency,
@@ -685,11 +682,6 @@ class TorchRegionalOceanModel:
         for index, module in enumerate(self.dynamics_modules):
             if isinstance(module, HorizontalTracerAdvection):
                 for tracer in _composition_tracer_names(module, module.name):
-                    validate_tracer_advection_scheme(
-                        tracer=tracer, horizontal=module.scheme,
-                        vertical=module.vertical_scheme, implicit=tracer in implicit_names,
-                        convective_implicit=convective_implicit,
-                    )
                     if tracer in tendency_ab:
                         validate_tracer_ab_scheme(
                             tracer=tracer, horizontal=module.scheme,

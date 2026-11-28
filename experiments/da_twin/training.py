@@ -85,12 +85,12 @@ def g0_path(out, name, steps):
 
 def compute_g0(w, steps, path, tree):
     t0 = time.perf_counter()
-    (J, g, row) = w.prob.value_grad(np.zeros(w.C.size), steps)
+    (J, g, _) = w.prob.value_grad(np.zeros(w.C.size), steps)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.stem + '.partial.npz')
     np.savez(tmp, g=g.astype(np.float32), J=J, steps=steps, tree=tree.text)
     os.replace(tmp, path)
-    return dict(window=w.name, steps=steps, J=J, wall_s=time.perf_counter() - t0, kpp_solver=row.get('kpp_solver'))
+    return dict(window=w.name, steps=steps, J=J, wall_s=time.perf_counter() - t0)
 
 def load_g0(path, tree):
     with np.load(path, allow_pickle=False) as z:
@@ -181,11 +181,10 @@ class Engine:
         raw = net(self.inputs[name].to(self.device), self.static)
         (v, handle) = vmap.control(raw)
         t1 = time.perf_counter()
-        (J, g, row) = w.prob.value_grad(v, steps)
+        (J, g, _) = w.prob.value_grad(v, steps)
         t2 = time.perf_counter()
         vmap.backward(handle, g, scale=1.0 / info['J0'])
-        kpp = row.get('kpp_solver') or {}
-        return dict(window=name, ok=True, J=J, J_per_obs=J / info['m'], loss=J / info['J0'], v_l2=float(np.linalg.norm(v)), v_share=n2.v_share(self.C, v), network_s=t1 - t0, value_grad_s=t2 - t1, backward_s=time.perf_counter() - t2, zero_v=bool(not np.any(v)), J_equals_g0_J=J == info['J0_value_grad'] if not np.any(v) else None, recovered_columns=kpp.get('recovered_columns'), dense_fallback_columns=kpp.get('dense_fallback_columns'), dense_max_relative_residual=kpp.get('dense_max_relative_residual'))
+        return dict(window=name, ok=True, J=J, J_per_obs=J / info['m'], loss=J / info['J0'], v_l2=float(np.linalg.norm(v)), v_share=n2.v_share(self.C, v), network_s=t1 - t0, value_grad_s=t2 - t1, backward_s=time.perf_counter() - t2, zero_v=bool(not np.any(v)), J_equals_g0_J=J == info['J0_value_grad'] if not np.any(v) else None)
 
     def window_value(self, net, vmap, name, steps):
         (w, info) = (self.wins[name], self.stage_info['windows'][name])

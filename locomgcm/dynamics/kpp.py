@@ -1792,7 +1792,6 @@ def kpp_calc_diffusivities(
     epsln: float = 1.0e-20,
     dB_dz: float = 5.2e-5,
     surface_buoyancy: str = "statekpp",
-    return_mixing_inputs: bool = False,
 ):
     """Full KPP driver: state + surface forcing -> KPP diffusivities + ghat.
 
@@ -1823,10 +1822,6 @@ def kpp_calc_diffusivities(
     ``surface_buoyancy`` selects the surface-relative buoyancy behind Ritop:
     ``"statekpp"`` (STATEKPP's dbsfc) or ``"divided_difference"``
     (:func:`kpp_surface_buoyancy_divided_difference`, JMD95 only).
-    ``return_mixing_inputs`` appends a dict with the positional and keyword
-    arguments of the RI_IWMIX and BLMIX calls (keys ``ri_args``,
-    ``ri_kwargs``, ``bl_args``, ``bl_kwargs``), used by the implicit
-    convective scheme (:mod:`locomgcm.dynamics.kpp_convective_implicit`).
     """
     # Vertical axis is -3 throughout; an OPTIONAL leading face-batch dim (the
     # cube face-batch) sits in ``*lead`` (() when called per-face) and passes through
@@ -1979,7 +1974,4 @@ def kpp_calc_diffusivities(
     KPPdiffKzS = diffus_out[1][..., 0:nz, :, :] * cellmask
     KPPdiffKzT = diffus_out[2][..., 0:nz, :, :] * cellmask
     KPPghat = ghat_out * cellmask
-    if return_mixing_inputs:
-        return KPPviscAz, KPPdiffKzS, KPPdiffKzT, KPPghat, hbl, dict(
-            ri_args=ri_args, ri_kwargs=ri_kwargs, bl_args=bl_args, bl_kwargs=bl_kwargs)
     return KPPviscAz, KPPdiffKzS, KPPdiffKzT, KPPghat, hbl

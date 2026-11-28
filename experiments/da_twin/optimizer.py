@@ -2,16 +2,10 @@
 import math
 import numpy as np
 from types import SimpleNamespace
-FAILED_COLUMN = None
 class TrialFailure(Exception):
     pass
 def failure_fields(failure, **where):
-    global FAILED_COLUMN
-    import re
-    FAILED_COLUMN = FAILED_COLUMN or re.compile('failed_column=(\\d+) \\(j=(\\d+), i=(\\d+)\\)')
-    rec = failure.get('record') or {}
-    m = FAILED_COLUMN.search(failure.get('message', ''))
-    return dict(where, evaluation=failure.get('evaluation'), error=failure.get('error'), column=int(m.group(1)) if m else rec.get('failed_column'), j=int(m.group(2)) if m else None, i=int(m.group(3)) if m else None, relative_residual=rec.get('relative_residual', rec.get('max_relative_residual')), dense_fallback_columns=rec.get('dense_fallback_columns'), dense_max_relative_residual=rec.get('dense_max_relative_residual'), tolerance=rec.get('tolerance'), status=rec.get('status'), background_cost=failure.get('background_cost'), wall_s=failure.get('wall_s'), message=failure.get('message', '')[:600])
+    return dict(where, evaluation=failure.get('evaluation'), error=failure.get('error'), background_cost=failure.get('background_cost'), wall_s=failure.get('wall_s'), message=failure.get('message', '')[:600])
 
 def lbfgs_backtracking(fun, x0, maxiter, callback, on_failure, maxcor=10, maxls=12, retries=5, failure_iterations=3, gtol=1e-05, ftol=1e-09, c1=0.0001):
 

@@ -25,7 +25,7 @@ def native_fields(path):
 
 
 class Problem:
-    def __init__(self, spec, bstd, *, kpp='convective', segment=1,
+    def __init__(self, spec, bstd, *, segment=1,
                  device_bytes=32 * 1024**3, compiled=True, momentum=None):
         from locomgcm.io.runner.config import load_run_config
         from experiments.cases._runtime import (
@@ -39,19 +39,7 @@ class Problem:
         self.spec, self.segment, self.device_bytes = spec, segment, device_bytes
         preload_requested_extensions(device='cuda')
         self.C = ControlTransform(spec['grid'], load_b_std(bstd))
-        overlay = None
-        if kpp == 'convective':
-            std = load_b_std(bstd)
-            overlay = {'model': {'stepper': {'kwargs': {
-                'kpp_surface_buoyancy': 'divided_difference',
-                'kpp_convective_implicit': {
-                    'root_policy': 'newton_factor_homotopy_v1',
-                    'root_tolerance': 1e-11, 'polish_steps': 2,
-                    'execution': 'compiled' if compiled else 'eager',
-                    'residual_scale': {n: std[n] for n in ('temp', 'salt')},
-                },
-            }}}}
-        self.cfg = _run_cfg_with_device(load_run_config(Path(spec['case']), extra_yaml=overlay), 'cuda')
+        self.cfg = _run_cfg_with_device(load_run_config(Path(spec['case'])), 'cuda')
         self.dt = float(self.cfg.time.dt)
         if self.dt != 600:
             raise ValueError('The twin protocol requires a 600 s step')

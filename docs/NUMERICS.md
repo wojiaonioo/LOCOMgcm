@@ -91,7 +91,7 @@ selects its arithmetic; it is passed explicitly to `kpp_statekpp` and
 | `kpp_dbloc_form` | Arithmetic | Use |
 |---|---|---|
 | `statekpp` (default) | two densities subtracted, as MITgcm STATEKPP (`pkg/kpp/kpp_routines.F:1930`) | comparison with MITgcm, including every MITgcm reference result |
-| `divided_difference` | JMD95 polynomial divided difference (`jmd95_density_difference`); JMD95 only | near-neutral derivatives; required by the implicit convective KPP |
+| `divided_difference` | JMD95 polynomial divided difference (`jmd95_density_difference`); JMD95 only | near-neutral derivatives |
 
 The two forms are algebraically equal and differ by a few ULP of `g*rho/rho`.
 Where `|dbloc|` is about 1e-13 m s-2, below the boundary layer in near-neutral
@@ -103,14 +103,6 @@ kernel (`LOCOMGCM_KPP_FUSED_CUDA`) compute the divided difference for JMD95 and
 decline the default form as `inapplicable:dbloc_form`, which runs the eager
 path. `kpp_surface_buoyancy` makes the same choice for the surface-relative
 buoyancy behind Ritop.
-
-## Implicit convective KPP
-
-The optional coupled temperature/salinity station retains the complete
-convective KPP residual and its implicit-function pullback. Its exact compact
-Jacobian, wet-column selection, checkpoint root ownership, execution options,
-and numerical checks are described in
-[implicit convective KPP execution](KPP_CONVECTIVE_IMPLICIT.md).
 
 ## Sampled-input clocks
 

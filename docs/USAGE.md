@@ -394,7 +394,7 @@ communication operators; the checkpoint window (capture, run, and the reverse
 entry, before admission and the objective's reverse; with a `CommSession` the
 window then ends through its failure path, which notifies the other ranks, and
 the caller receives `CommSessionError` with the `NotImplementedError` as its
-cause); the implicit convective KPP; `checked_root_solve` (as `SolveRejected`,
+cause); `checked_root_solve` (as `SolveRejected`,
 eager VJP only); `abs_with_zero_slope` inside a compiled region (under
 `fullgraph=False` the trace breaks there and the call runs eagerly instead). A
 direct `pcg_solve(root_adjoint=True)` without `root_operands` raises only when
