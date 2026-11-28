@@ -1,7 +1,8 @@
 # Citing LOCOMgcm
 
-The article that describes the model, **LOCOMgcm: A Differentiable, Fast
-Ocean General Circulation Model in PyTorch** (Tang, Xu, Hong and Zhou), has
+The article that describes the model, **LOCOMgcm: A Differentiable,
+GPU-Accelerated Ocean General Circulation Model in PyTorch** (Tang, Xu, Hong
+and Zhou), has
 not been published yet. Until it is, cite the software and state the Git
 commit you used:
 

@@ -9,7 +9,7 @@ comparable to those between two MITgcm runs differing only in summation order.
 LOCOMgcm implements the MITgcm ocean discretizations in PyTorch, supports
 regional and global grids, and runs on NVIDIA GPUs.
 
-**LOCOMgcm: A Differentiable, Fast Ocean General Circulation Model in PyTorch**
+**LOCOMgcm: A Differentiable, GPU-Accelerated Ocean General Circulation Model in PyTorch**
 
 Haoyang Tang<sup>1,2</sup>, Hongzhou Xu<sup>1,\*</sup>, Bo Hong<sup>3</sup>, Wei Zhou<sup>4,5</sup>
 
